@@ -5,6 +5,7 @@ import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.FPSAnimator;
 import com.jogamp.opengl.util.texture.Texture;
 import com.jogamp.opengl.util.texture.TextureIO;
+import org.example.engine.InputHandler;
 import org.example.engine.Shader;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -19,6 +20,7 @@ public class Main implements GLEventListener {
 
     private static GL4 gl;
     private Shader shader;
+    private static InputHandler inputHandler;
 
     private final float[] polygon = {
             //position              color               texture
@@ -60,6 +62,7 @@ public class Main implements GLEventListener {
     private final Vector3f cameraPosition = new Vector3f(0.0f, 0.0f, 0.4f);
     private final Vector3f cameraTarget = new Vector3f(0.0f, 0.0f, 0.0f);
     private final Vector3f cameraUp = new Vector3f(0.0f, 1.0f, 0.0f);
+    private float cameraDistance = 5.0f;
 
     private Matrix4f projection;
 
@@ -73,9 +76,16 @@ public class Main implements GLEventListener {
         capabilities.setDoubleBuffered(true);
 
         GLCanvas canvas = new GLCanvas(capabilities);
-        canvas.addGLEventListener(new Main());
-        frame.getContentPane().add(canvas);
+        Main mainInstance = new Main();
+        canvas.addGLEventListener(mainInstance);
 
+        inputHandler = new InputHandler(mainInstance.cameraPosition, mainInstance.rotation, mainInstance);
+        canvas.addKeyListener(inputHandler);
+        canvas.addMouseListener(inputHandler);
+        canvas.addMouseMotionListener(inputHandler);
+        canvas.addMouseWheelListener(inputHandler);
+
+        frame.getContentPane().add(canvas);
         frame.setSize(900, 900);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
@@ -163,15 +173,23 @@ public class Main implements GLEventListener {
         }
     }
 
+    public void adjustCameraDistance(float delta) {
+        cameraDistance += delta;
+        if (cameraDistance < 0.1f) cameraDistance = 0.1f;
+        System.out.println("Camera Distance: " + cameraDistance);
+    }
+
     @Override
     public void display(GLAutoDrawable drawable) {
+        inputHandler.update();
+
         gl.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
         shader.use();
 
         camera.identity();
-        cameraPosition.set(5.0f * Math.cos(System.currentTimeMillis() * 0.001), 0.f, 5.0f * Math.sin(System.currentTimeMillis() * 0.001));
+        cameraPosition.set(cameraDistance * Math.cos(System.currentTimeMillis() * 0.001), 0.f, cameraDistance * Math.sin(System.currentTimeMillis() * 0.001));
         cameraTarget.set(0.f, 0.f, 0.f);
         cameraUp.set(0.f, 1.f, 0.f);
         camera.lookAt(cameraPosition, cameraTarget, cameraUp);
@@ -188,12 +206,8 @@ public class Main implements GLEventListener {
 
         model.identity();
         model.translate(position);
-        rotation.x += 0.01f;
-        model.rotateX(rotation.x);
-        rotation.y += 0.01f;
-        model.rotateY(rotation.y);
-        rotation.z += 0.01f;
-        model.rotateZ(rotation.z);
+        rotation.add(0.01f, 0.01f, 0.01f);
+        model.rotateX(rotation.x).rotateY(rotation.y).rotateZ(rotation.z);
         model.scale(scale);
 
         Matrix4f pvm = new Matrix4f(projection).mul(camera).mul(model);
