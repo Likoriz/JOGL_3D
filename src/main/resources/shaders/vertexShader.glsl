@@ -1,16 +1,15 @@
 #version 450 core
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 inColor;
+layout (location = 2) in vec2 inTexCoords;
 
 out vec3 vertexColor;
-//uniform vec3 uniformPosition;
+out vec2 texCoords;
+
 uniform mat4 pvm;
 
 void main() {
-//    vec3 newPos = aPos / 2 + uniformPosition / 2;
-//    vec3 dir = (newPos - vec3(0, 0, 0)) / distance(vec3(0, 0, 0), newPos);
-
-//    gl_Position = vec4(newPos + dir / 3.0f, 1.0f);
     gl_Position = pvm * vec4(aPos, 1.0f);
     vertexColor = inColor;
+    texCoords = inTexCoords;
 }

@@ -3,11 +3,15 @@ package org.example;
 import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.FPSAnimator;
+import com.jogamp.opengl.util.texture.Texture;
+import com.jogamp.opengl.util.texture.TextureIO;
 import org.example.engine.Shader;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 import javax.swing.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
@@ -16,18 +20,19 @@ public class Main implements GLEventListener {
     private static GL4 gl;
     private Shader shader;
 
-    private float polygon[] = {
-            -1.0f, 1.0f, -1.0f,     1.0f, 0.0f, 0.0f,
-            1.0f, 1.0f, -1.0f,      0.5f, 0.5f, 0.0f,
-            1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,
-            -1.0f, 1.0f, 1.0f,      0.0f, 0.5f, 0.5f,
-            -1.0f, -1.0f, -1.0f,    0.0f, 0.0f, 1.0f,
-            1.0f, -1.0f, -1.0f,     0.5f, 0.0f, 0.5f,
-            1.0f, -1.0f, 1.0f,      0.5f, 0.5f, 0.5f,
-            -1.0f, -1.0f, 1.0f,     1.0f, 1.0f, 1.0f
+    private final float[] polygon = {
+            //position              color               texture
+            -1.0f, 1.0f, -1.0f,     1.0f, 0.0f, 0.0f,   0.f, 1.f,
+            1.0f, 1.0f, -1.0f,      0.5f, 0.5f, 0.0f,   1.f, 1.1f,
+            1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,   1.f, 0.f,
+            -1.0f, 1.0f, 1.0f,      0.0f, 0.5f, 0.5f,   0.f, 0.f,
+            -1.0f, -1.0f, -1.0f,    0.0f, 0.0f, 1.0f,   1.f, 0.f,
+            1.0f, -1.0f, -1.0f,     0.5f, 0.0f, 0.5f,   0.f, 0.f,
+            1.0f, -1.0f, 1.0f,      0.5f, 0.5f, 0.5f,   0.f, 1.f,
+            -1.0f, -1.0f, 1.0f,     1.0f, 1.0f, 1.0f,   1.f, 1.f
     };
 
-    private int[] indices = {
+    private final int[] indices = {
         0, 1, 3,
         1, 2, 3,
         0, 4, 1,
@@ -46,17 +51,19 @@ public class Main implements GLEventListener {
     private int vao_polygon;
     private int ebo_polygon;
 
-    Matrix4f model;
-    Vector3f scale = new Vector3f(1.0f);
-    Vector3f position = new Vector3f(0.0f);
-    Vector3f rotation = new Vector3f(0.0f);
+    private Matrix4f model;
+    private final Vector3f scale = new Vector3f(1.0f);
+    private final Vector3f position = new Vector3f(0.0f);
+    private final Vector3f rotation = new Vector3f(0.0f);
 
-    Matrix4f camera;
-    Vector3f cameraPosition = new Vector3f(0.0f, 0.0f, 0.4f);
-    Vector3f cameraTarget = new Vector3f(0.0f, 0.0f, 0.0f);
-    Vector3f cameraUp = new Vector3f(0.0f, 1.0f, 0.0f);
+    private Matrix4f camera;
+    private final Vector3f cameraPosition = new Vector3f(0.0f, 0.0f, 0.4f);
+    private final Vector3f cameraTarget = new Vector3f(0.0f, 0.0f, 0.0f);
+    private final Vector3f cameraUp = new Vector3f(0.0f, 1.0f, 0.0f);
 
-    Matrix4f projection;
+    private Matrix4f projection;
+
+    private Texture texture;
 
     public static void main(String[] args) {
         JFrame frame = new JFrame("JOGL 3D Window");
@@ -103,21 +110,23 @@ public class Main implements GLEventListener {
         gl.glBindVertexArray(vao_polygon);
 
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo_polygon);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, polygon.length * Float.BYTES, FloatBuffer.wrap(polygon), GL.GL_STATIC_DRAW);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, (long) polygon.length * Float.BYTES, FloatBuffer.wrap(polygon), GL.GL_STATIC_DRAW);
 
         gl.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, ebo_polygon);
-        gl.glBufferData(GL.GL_ELEMENT_ARRAY_BUFFER, indices.length * Integer.BYTES, IntBuffer.wrap(indices), GL.GL_STATIC_DRAW);
+        gl.glBufferData(GL.GL_ELEMENT_ARRAY_BUFFER, (long) indices.length * Integer.BYTES, IntBuffer.wrap(indices), GL.GL_STATIC_DRAW);
 
-        int stride = 6 * Float.BYTES;
+        int stride = 8 * Float.BYTES;
 
-        gl.glEnableVertexAttribArray(0);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, stride, 0);
+        gl.glEnableVertexAttribArray(0);
 
-        gl.glEnableVertexAttribArray(1);
         gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, stride, 3 * Float.BYTES);
+        gl.glEnableVertexAttribArray(1);
 
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0);
-        gl.glBindVertexArray(0);
+        gl.glVertexAttribPointer(2, 2, GL.GL_FLOAT, false, stride, 6 * Float.BYTES);
+        gl.glEnableVertexAttribArray(2);
+
+        gl.glEnable(GL.GL_DEPTH_TEST);
 
         model = new Matrix4f();
 
@@ -127,7 +136,31 @@ public class Main implements GLEventListener {
         projection = new Matrix4f();
         projection.perspective(45.f , 1.f, 0.01f, 100.f);
 
-        gl.glEnable(gl.GL_DEPTH_TEST);
+        try {
+            InputStream textureStream = getClass().getClassLoader().getResourceAsStream("images/old_01.png");
+            if (textureStream == null) {
+                System.err.println("Failed to load texture image: File not found");
+                return;
+            } else {
+                System.out.println("Texture stream loaded successfully");
+            }
+
+            texture = TextureIO.newTexture(textureStream, true, "PNG");
+            System.out.println("Texture loaded successfully: " + texture);
+
+            gl.glBindTexture(GL.GL_TEXTURE_2D, texture.getTextureObject());
+
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
+
+            gl.glGenerateMipmap(GL.GL_TEXTURE_2D);
+
+            textureStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
