@@ -5,19 +5,20 @@ import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.FPSAnimator;
 import com.jogamp.opengl.util.texture.Texture;
 import com.jogamp.opengl.util.texture.TextureIO;
+import org.example.engine.Camera;
 import org.example.engine.InputHandler;
 import org.example.engine.Shader;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 public class Main implements GLEventListener {
-
     private static GL4 gl;
     private Shader shader;
     private static InputHandler inputHandler;
@@ -58,17 +59,16 @@ public class Main implements GLEventListener {
     private final Vector3f position = new Vector3f(0.0f);
     private final Vector3f rotation = new Vector3f(0.0f);
 
-    private Matrix4f camera;
-    private final Vector3f cameraPosition = new Vector3f(0.0f, 0.0f, 0.4f);
-    private final Vector3f cameraTarget = new Vector3f(0.0f, 0.0f, 0.0f);
-    private final Vector3f cameraUp = new Vector3f(0.0f, 1.0f, 0.0f);
-    private float cameraDistance = 5.0f;
-
-    private Matrix4f projection;
+    private static Camera camera = new Camera(new Vector3f(0.0f, 0.0f, -2.0f));
+    private long oldTime = System.currentTimeMillis();
+    private long newTime;
+    private float deltaTime;
 
     private Texture texture;
+    public boolean wireframeMode = false;
+    public boolean switchMode = false;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws AWTException {
         JFrame frame = new JFrame("JOGL 3D Window");
 
         GLProfile profile = GLProfile.get(GLProfile.GL4);
@@ -79,20 +79,27 @@ public class Main implements GLEventListener {
         Main mainInstance = new Main();
         canvas.addGLEventListener(mainInstance);
 
-        inputHandler = new InputHandler(mainInstance.cameraPosition, mainInstance.rotation, mainInstance);
+        inputHandler = new InputHandler(mainInstance, camera);
         canvas.addKeyListener(inputHandler);
         canvas.addMouseListener(inputHandler);
         canvas.addMouseMotionListener(inputHandler);
         canvas.addMouseWheelListener(inputHandler);
 
         frame.getContentPane().add(canvas);
-        frame.setSize(900, 900);
+        frame.setSize(1280, 720);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
-        canvas.requestFocus();
+        canvas.requestFocusInWindow();
 
         FPSAnimator animator = new FPSAnimator(canvas, 60);
         animator.start();
+    }
+
+    public void switchPolygonMode() {
+        if (wireframeMode)
+            gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_LINE);
+        else
+            gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_FILL);
     }
 
     @Override
@@ -137,14 +144,11 @@ public class Main implements GLEventListener {
         gl.glEnableVertexAttribArray(2);
 
         gl.glEnable(GL.GL_DEPTH_TEST);
+        gl.glEnable(GL.GL_CULL_FACE);
+        gl.glFrontFace(gl.GL_CW);
+        switchPolygonMode();
 
         model = new Matrix4f();
-
-        camera = new Matrix4f();
-        camera.lookAt(cameraPosition, cameraTarget, cameraUp);
-
-        projection = new Matrix4f();
-        projection.perspective(45.f , 1.f, 0.01f, 100.f);
 
         try {
             InputStream textureStream = getClass().getClassLoader().getResourceAsStream("images/old_01.png");
@@ -173,29 +177,23 @@ public class Main implements GLEventListener {
         }
     }
 
-    public void adjustCameraDistance(float delta) {
-        cameraDistance += delta;
-        if (cameraDistance < 0.1f) cameraDistance = 0.1f;
-        System.out.println("Camera Distance: " + cameraDistance);
-    }
-
     @Override
     public void display(GLAutoDrawable drawable) {
-        inputHandler.update();
+        newTime = System.currentTimeMillis();
+        deltaTime = (newTime - oldTime) / 1000.0f;
+        oldTime = newTime;
+
+        inputHandler.update(deltaTime);
 
         gl.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
         shader.use();
 
-        camera.identity();
-        cameraPosition.set(cameraDistance * Math.cos(System.currentTimeMillis() * 0.001), 0.f, cameraDistance * Math.sin(System.currentTimeMillis() * 0.001));
-        cameraTarget.set(0.f, 0.f, 0.f);
-        cameraUp.set(0.f, 1.f, 0.f);
-        camera.lookAt(cameraPosition, cameraTarget, cameraUp);
-
-        projection.identity();
-        projection.perspective(45.f , 1.f, 0.01f, 100.f);
+        if (switchMode) {
+            switchPolygonMode();
+            switchMode = false;
+        }
 
         position.x = (float)(0.8f * Math.cos(System.currentTimeMillis() * 0.001));
         position.y = (float)(0.8f * Math.sin(System.currentTimeMillis() * 0.001));
@@ -210,9 +208,35 @@ public class Main implements GLEventListener {
         model.rotateX(rotation.x).rotateY(rotation.y).rotateZ(rotation.z);
         model.scale(scale);
 
-        Matrix4f pvm = new Matrix4f(projection).mul(camera).mul(model);
+        Matrix4f pvm = camera.getProjectionMatrix().mul(camera.getViewMatrix()).mul(model);
 
         shader.setMatrix4f("pvm", pvm);
+        shader.setBool("wireframeMode", wireframeMode);
+
+        gl.glBindVertexArray(vao_polygon);
+        gl.glDrawElements(GL.GL_TRIANGLES, indices.length, GL.GL_UNSIGNED_INT, 0);
+
+        model.identity();
+        model.scale(0.25f);
+
+        Matrix4f pvm1 = camera.getProjectionMatrix().mul(camera.getViewMatrix()).mul(model);
+
+        shader.setMatrix4f("pvm", pvm1);
+        shader.setBool("wireframeMode", wireframeMode);
+
+        gl.glBindVertexArray(vao_polygon);
+        gl.glDrawElements(GL.GL_TRIANGLES, indices.length, GL.GL_UNSIGNED_INT, 0);
+
+        model.identity();
+        position.y = (float)(1 + 0.8f * Math.cos(System.currentTimeMillis() * 0.001));
+        position.x = (float)(1 + 0.8f * Math.sin(System.currentTimeMillis() * 0.001));
+        model.translate(position);
+        model.scale(0.2f);
+
+        Matrix4f pvm2 = camera.getProjectionMatrix().mul(camera.getViewMatrix()).mul(model);
+
+        shader.setMatrix4f("pvm", pvm2);
+        shader.setBool("wireframeMode", wireframeMode);
 
         gl.glBindVertexArray(vao_polygon);
         gl.glDrawElements(GL.GL_TRIANGLES, indices.length, GL.GL_UNSIGNED_INT, 0);

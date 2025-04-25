@@ -1,86 +1,103 @@
 package org.example.engine;
 
 import java.awt.event.*;
+import java.util.Arrays;
 
 import org.example.Main;
-import org.joml.Vector3f;
+
 
 public class InputHandler implements KeyListener, MouseListener, MouseMotionListener, MouseWheelListener {
 
     private boolean[] keys = new boolean[256];
-    //private int mouseX, mouseY, lastMouseX, lastMouseY;
-    //private boolean leftMouseButtonPressed = false;
+    private float lastMouseX, lastMouseY;
+    private float offsetX = 0, offsetY = 0;
 
     private final Main mainInstance;
+    private Camera camera;
 
-    public InputHandler(Vector3f cameraPosition, Vector3f rotation, Main mainInstance) {
+    public InputHandler(Main mainInstance, Camera camera) {
         this.mainInstance = mainInstance;
+        this.camera = camera;
+
+        Arrays.fill(keys, false);
     }
 
-    public void update() {
-
+    public void update(float deltaTime) {
+        int dir = getMovementDirection();
+        camera.move(dir, deltaTime);
     }
 
-    @Override
-    public void keyPressed(KeyEvent e) {
-        keys[e.getKeyCode()] = true;
-        //System.out.println(e.getKeyChar());
-    }
+    private int getMovementDirection() {
+        int dir = 0;
+        if (keys[KeyEvent.VK_W])
+            dir |= Camera_Movement.CAM_FORWARD.getValue();
+        if (keys[KeyEvent.VK_S])
+            dir |= Camera_Movement.CAM_BACKWARD.getValue();
+        if (keys[KeyEvent.VK_A])
+            dir |= Camera_Movement.CAM_LEFT.getValue();
+        if (keys[KeyEvent.VK_D])
+            dir |= Camera_Movement.CAM_RIGHT.getValue();
+        if (keys[KeyEvent.VK_Q])
+            dir |= Camera_Movement.CAM_UP.getValue();
+        if (keys[KeyEvent.VK_E])
+            dir |= Camera_Movement.CAM_DOWN.getValue();
 
-    @Override
-    public void keyReleased(KeyEvent e) {
-        keys[e.getKeyCode()] = false;
-    }
-
-    @Override
-    public void keyTyped(KeyEvent e) {
-
+        return dir;
     }
 
     @Override
     public void mousePressed(MouseEvent e) {
-//        if (e.getButton() == MouseEvent.BUTTON1) {
-//            leftMouseButtonPressed = true;
-//        }
+        lastMouseX = e.getX();
+        lastMouseY = e.getY();
     }
 
     @Override
-    public void mouseReleased(MouseEvent e) {
-//        if (e.getButton() == MouseEvent.BUTTON1) {
-//            leftMouseButtonPressed = false;
-//        }
-    }
-
-    @Override
-    public void mouseMoved(MouseEvent e) {
-//        mouseX = e.getX();
-//        mouseY = e.getY();
-    }
+    public void mouseReleased(MouseEvent e) {}
 
     @Override
     public void mouseDragged(MouseEvent e) {
-//        mouseX = e.getX();
-//        mouseY = e.getY();
+        float mouseX = e.getX();
+        float mouseY = e.getY();
+
+        offsetX = mouseX - lastMouseX;
+        offsetY = lastMouseY - mouseY;
+
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
+
+        camera.rotate(offsetX, offsetY);
     }
 
     @Override
-    public void mouseClicked(MouseEvent e) {
-
-    }
+    public void mouseMoved(MouseEvent e) {}
 
     @Override
-    public void mouseEntered(MouseEvent e) {
+    public void keyPressed(KeyEvent e) {
+        keys[e.getKeyCode()] = true;
 
+        switch(e.getKeyChar()) {
+            case KeyEvent.VK_SPACE:
+                mainInstance.wireframeMode = !(mainInstance.wireframeMode);
+                //mainInstance.switchPolygonMode();
+                mainInstance.switchMode = true;
+                break;
+        }
     }
+    @Override
+    public void keyReleased(KeyEvent e) { keys[e.getKeyCode()] = false; }
+    @Override
+    public void keyTyped(KeyEvent e) {}
 
     @Override
-    public void mouseExited(MouseEvent e) {
-
-    }
+    public void mouseClicked(MouseEvent e) {}
+    @Override
+    public void mouseEntered(MouseEvent e) {}
+    @Override
+    public void mouseExited(MouseEvent e) {}
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
-        float scrollAmount = e.getWheelRotation() * 0.1f;
-        mainInstance.adjustCameraDistance(scrollAmount);
+        float scroll = e.getWheelRotation();
+        camera.changeFOV(scroll);
     }
 }

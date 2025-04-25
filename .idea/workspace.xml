@@ -5,9 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e955916f-0b53-441c-986a-537066b70ef1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/example/engine/InputHandler.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/example/engine/Camera.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/example/engine/Camera_Movement.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/engine/InputHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/engine/InputHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/engine/Shader.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/engine/Shader.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/shaders/fragmentShader.glsl" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/shaders/fragmentShader.glsl" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -18,6 +22,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Class" />
+        <option value="Enum" />
       </list>
     </option>
   </component>
@@ -87,5 +92,16 @@
       <updated>1741032157684</updated>
     </task>
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
 </project>

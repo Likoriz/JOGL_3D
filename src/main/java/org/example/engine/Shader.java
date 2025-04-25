@@ -89,7 +89,7 @@ public class Shader {
         return programID;
     }
 
-    private void setBool(String name, boolean value) {
+    public void setBool(String name, boolean value) {
         gl.glUniform1i(gl.glGetUniformLocation(programID, name), Boolean.compare(value, false));
     }
 
