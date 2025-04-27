@@ -1,15 +1,16 @@
 #version 450 core
-in vec3 vertexColor;
+
+in vec3 vertColor;
 in vec2 texCoords;
 
-out vec4 FragColor;
+out vec4 outColor;
 
 uniform sampler2D ourTexture;
 uniform bool wireframeMode;
 
 void main() {
     if (wireframeMode)
-        FragColor = vec4(vertexColor, 1.0f);
+        outColor = vec4(vertColor, 1.0f);
     else
-        FragColor = texture(ourTexture, texCoords) * vec4(vertexColor, 1.0f);
+        outColor = texture(ourTexture, texCoords) * vec4(vertColor, 1.0f);
 }

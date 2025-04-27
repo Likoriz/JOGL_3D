@@ -7,8 +7,10 @@ import com.jogamp.opengl.util.texture.Texture;
 import com.jogamp.opengl.util.texture.TextureIO;
 import org.example.engine.Camera;
 import org.example.engine.InputHandler;
+import org.example.engine.ModelTransform;
 import org.example.engine.Shader;
 import org.joml.Matrix4f;
+import org.joml.Random;
 import org.joml.Vector3f;
 
 import javax.swing.*;
@@ -23,36 +25,56 @@ public class Main implements GLEventListener {
     private Shader shader;
     private static InputHandler inputHandler;
 
-    private final float[] polygon = {
-            //position              color               texture
-            -1.0f, 1.0f, -1.0f,     1.0f, 0.0f, 0.0f,   0.f, 1.f,
-            1.0f, 1.0f, -1.0f,      0.5f, 0.5f, 0.0f,   1.f, 1.1f,
-            1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,   1.f, 0.f,
-            -1.0f, 1.0f, 1.0f,      0.0f, 0.5f, 0.5f,   0.f, 0.f,
-            -1.0f, -1.0f, -1.0f,    0.0f, 0.0f, 1.0f,   1.f, 0.f,
-            1.0f, -1.0f, -1.0f,     0.5f, 0.0f, 0.5f,   0.f, 0.f,
-            1.0f, -1.0f, 1.0f,      0.5f, 0.5f, 0.5f,   0.f, 1.f,
-            -1.0f, -1.0f, 1.0f,     1.0f, 1.0f, 1.0f,   1.f, 1.f
+    private final float[] cube = {
+            //position			normal					texture				color
+            -1.0f,-1.0f,-1.0f,	-1.0f,  0.0f,  0.0f,	0.0f, 0.0f,		0.0f, 1.0f, 0.0f,
+            -1.0f,-1.0f, 1.0f,	-1.0f,  0.0f,  0.0f,	1.0f, 0.0f,		0.0f, 1.0f, 0.0f,
+            -1.0f, 1.0f, 1.0f,	-1.0f,  0.0f,  0.0f,	1.0f, 1.0f,		0.0f, 1.0f, 0.0f,
+            -1.0f,-1.0f,-1.0f,	-1.0f,  0.0f,  0.0f,	0.0f, 0.0f,		0.0f, 1.0f, 0.0f,
+            -1.0f, 1.0f, 1.0f,	-1.0f,  0.0f,  0.0f,	1.0f, 1.0f,		0.0f, 1.0f, 0.0f,
+            -1.0f, 1.0f,-1.0f,	-1.0f,  0.0f,  0.0f,	0.0f, 1.0f,		0.0f, 1.0f, 0.0f,
+
+            1.0f, 1.0f,-1.0f,	0.0f,  0.0f, -1.0f, 	0.0f, 1.0f,		1.0f, 0.0f, 0.0f,
+            -1.0f,-1.0f,-1.0f,	0.0f,  0.0f, -1.0f, 	1.0f, 0.0f,		1.0f, 0.0f, 0.0f,
+            -1.0f, 1.0f,-1.0f,	0.0f,  0.0f, -1.0f, 	1.0f, 1.0f,		1.0f, 0.0f, 0.0f,
+            1.0f, 1.0f,-1.0f,	0.0f,  0.0f, -1.0f,		0.0f, 1.0f,		1.0f, 0.0f, 0.0f,
+            1.0f,-1.0f,-1.0f,	0.0f,  0.0f, -1.0f,		0.0f, 0.0f,		1.0f, 0.0f, 0.0f,
+            -1.0f,-1.0f,-1.0f,	0.0f,  0.0f, -1.0f,		1.0f, 0.0f,		1.0f, 0.0f, 0.0f,
+
+            1.0f,-1.0f, 1.0f,	0.0f, -1.0f,  0.0f,		0.0f, 0.0f,		0.0f, 0.0f, 1.0f,
+            -1.0f,-1.0f,-1.0f,	0.0f, -1.0f,  0.0f,		1.0f, 1.0f,		0.0f, 0.0f, 1.0f,
+            1.0f,-1.0f,-1.0f,	0.0f, -1.0f,  0.0f,		0.0f, 1.0f,		0.0f, 0.0f, 1.0f,
+            1.0f,-1.0f, 1.0f,	0.0f, -1.0f,  0.0f,		0.0f, 0.0f,		0.0f, 0.0f, 1.0f,
+            -1.0f,-1.0f, 1.0f,	0.0f, -1.0f,  0.0f,		1.0f, 0.0f,		0.0f, 0.0f, 1.0f,
+            -1.0f,-1.0f,-1.0f,	0.0f, -1.0f,  0.0f,		1.0f, 1.0f,		0.0f, 0.0f, 1.0f,
+
+            -1.0f, 1.0f, 1.0f,	0.0f,  0.0f, 1.0f,		0.0f, 1.0f,		0.0f, 0.0f, 1.0f,
+            -1.0f,-1.0f, 1.0f,	0.0f,  0.0f, 1.0f,		0.0f, 0.0f,		0.0f, 0.0f, 1.0f,
+            1.0f,-1.0f, 1.0f,	0.0f,  0.0f, 1.0f,		1.0f, 0.0f,		0.0f, 0.0f, 1.0f,
+            1.0f, 1.0f, 1.0f,	0.0f,  0.0f, 1.0f,		1.0f, 1.0f,		0.0f, 0.0f, 1.0f,
+            -1.0f, 1.0f, 1.0f,	0.0f,  0.0f, 1.0f,		0.0f, 1.0f,		0.0f, 0.0f, 1.0f,
+            1.0f,-1.0f, 1.0f,	0.0f,  0.0f, 1.0f,		1.0f, 0.0f,		0.0f, 0.0f, 1.0f,
+
+            1.0f, 1.0f, 1.0f,	1.0f,  0.0f,  0.0f,		0.0f, 1.0f,		1.0f, 0.0f, 0.0f,
+            1.0f,-1.0f,-1.0f,	1.0f,  0.0f,  0.0f,		1.0f, 0.0f,		1.0f, 0.0f, 0.0f,
+            1.0f, 1.0f,-1.0f,	1.0f,  0.0f,  0.0f,		1.0f, 1.0f,		1.0f, 0.0f, 0.0f,
+            1.0f,-1.0f,-1.0f,	1.0f,  0.0f,  0.0f,		1.0f, 0.0f,		1.0f, 0.0f, 0.0f,
+            1.0f, 1.0f, 1.0f,	1.0f,  0.0f,  0.0f,		0.0f, 1.0f,		1.0f, 0.0f, 0.0f,
+            1.0f,-1.0f, 1.0f,	1.0f,  0.0f,  0.0f,		0.0f, 0.0f,		1.0f, 0.0f, 0.0f,
+
+            1.0f, 1.0f, 1.0f,	0.0f,  1.0f,  0.0f,		1.0f, 0.0f,		0.0f, 1.0f, 0.0f,
+            1.0f, 1.0f,-1.0f,	0.0f,  1.0f,  0.0f,		1.0f, 1.0f,		0.0f, 1.0f, 0.0f,
+            -1.0f, 1.0f,-1.0f,	0.0f,  1.0f,  0.0f,		0.0f, 1.0f,		0.0f, 1.0f, 0.0f,
+            1.0f, 1.0f, 1.0f,	0.0f,  1.0f,  0.0f,		1.0f, 0.0f,		0.0f, 1.0f, 0.0f,
+            -1.0f, 1.0f,-1.0f,	0.0f,  1.0f,  0.0f,		0.0f, 1.0f,		0.0f, 1.0f, 0.0f,
+            -1.0f, 1.0f, 1.0f,	0.0f,  1.0f,  0.0f,		0.0f, 0.0f,		0.0f, 1.0f, 0.0f
     };
 
-    private final int[] indices = {
-        0, 1, 3,
-        1, 2, 3,
-        0, 4, 1,
-        1, 4, 5,
-        0, 3, 7,
-        0, 7, 4,
-        1, 6, 2,
-        1, 5, 6,
-        2, 7, 3,
-        2, 6, 7,
-        4, 7, 5,
-        5, 7, 6
-};
+    private final int cubeCount = 200;
+    ModelTransform[] cubeTrans;
 
     private int vbo_polygon;
     private int vao_polygon;
-    private int ebo_polygon;
 
     private Matrix4f model;
     private final Vector3f scale = new Vector3f(1.0f);
@@ -112,44 +134,6 @@ public class Main implements GLEventListener {
 
         shader = new Shader(gl, vertexShaderPath, fragmentShaderPath);
 
-        int[] vao = new int[1];
-        gl.glGenVertexArrays(1, vao, 0);
-        vao_polygon = vao[0];
-
-        int[] vbo = new int[1];
-        gl.glGenBuffers(1, vbo, 0);
-        vbo_polygon = vbo[0];
-
-        int[] ebo = new int[1];
-        gl.glGenBuffers(1, ebo, 0);
-        ebo_polygon = ebo[0];
-
-        gl.glBindVertexArray(vao_polygon);
-
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo_polygon);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, (long) polygon.length * Float.BYTES, FloatBuffer.wrap(polygon), GL.GL_STATIC_DRAW);
-
-        gl.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, ebo_polygon);
-        gl.glBufferData(GL.GL_ELEMENT_ARRAY_BUFFER, (long) indices.length * Integer.BYTES, IntBuffer.wrap(indices), GL.GL_STATIC_DRAW);
-
-        int stride = 8 * Float.BYTES;
-
-        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, stride, 0);
-        gl.glEnableVertexAttribArray(0);
-
-        gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, stride, 3 * Float.BYTES);
-        gl.glEnableVertexAttribArray(1);
-
-        gl.glVertexAttribPointer(2, 2, GL.GL_FLOAT, false, stride, 6 * Float.BYTES);
-        gl.glEnableVertexAttribArray(2);
-
-        gl.glEnable(GL.GL_DEPTH_TEST);
-        gl.glEnable(GL.GL_CULL_FACE);
-        gl.glFrontFace(gl.GL_CW);
-        switchPolygonMode();
-
-        model = new Matrix4f();
-
         try {
             InputStream textureStream = getClass().getClassLoader().getResourceAsStream("images/old_01.png");
             if (textureStream == null) {
@@ -175,6 +159,64 @@ public class Main implements GLEventListener {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        cubeTrans = new ModelTransform[cubeCount];
+        for (int i = 0; i < cubeCount; i++) {
+            cubeTrans[i] = new ModelTransform();
+        }
+
+        Random rand = new Random();
+        for (int i = 0; i < cubeCount; i++) {
+            float scale = (rand.nextInt(6) + 1) / 20.0f;
+
+            cubeTrans[i] = new ModelTransform();
+
+            cubeTrans[i].position = new Vector3f((rand.nextInt(201) - 100) / 50.0f,(rand.nextInt(201) - 100) / 50.0f,(rand.nextInt(201) - 100) / 50.0f);
+            cubeTrans[i].rotation = new Vector3f(rand.nextFloat() * 360.0f, rand.nextFloat() * 360.0f, rand.nextFloat() * 360.0f);
+            cubeTrans[i].setScale(scale);
+
+            if (cubeTrans[i].position.length() < 0.7f) {
+                i--;
+            }
+        }
+
+        int[] vao = new int[1];
+        gl.glGenVertexArrays(1, vao, 0);
+        vao_polygon = vao[0];
+
+        int[] vbo = new int[1];
+        gl.glGenBuffers(1, vbo, 0);
+        vbo_polygon = vbo[0];
+
+        gl.glBindVertexArray(vao_polygon);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo_polygon);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, (long) cube.length * Float.BYTES, FloatBuffer.wrap(cube), GL.GL_STATIC_DRAW);
+
+        int stride = 11 * Float.BYTES;
+
+        //position
+        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, stride, 0);
+        gl.glEnableVertexAttribArray(0);
+
+        //normal
+        gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, stride, 3 * Float.BYTES);
+        gl.glEnableVertexAttribArray(1);
+
+        //texture coords
+        gl.glVertexAttribPointer(2, 2, GL.GL_FLOAT, false, stride, 6 * Float.BYTES);
+        gl.glEnableVertexAttribArray(2);
+
+        //color
+        gl.glVertexAttribPointer(3, 3, GL.GL_FLOAT, false, stride, 8 * Float.BYTES);
+        gl.glEnableVertexAttribArray(3);
+
+        gl.glEnable(GL.GL_DEPTH_TEST);
+        gl.glEnable(GL.GL_CULL_FACE);
+        gl.glFrontFace(gl.GL_CCW);
+        switchPolygonMode();
+
+        //model = new Matrix4f();
     }
 
     @Override
@@ -195,51 +237,75 @@ public class Main implements GLEventListener {
             switchMode = false;
         }
 
-        position.x = (float)(0.8f * Math.cos(System.currentTimeMillis() * 0.001));
-        position.y = (float)(0.8f * Math.sin(System.currentTimeMillis() * 0.001));
+        for (int i = 0; i < cubeCount; i++) {
+            model = new Matrix4f();
+            model.identity();
 
-        scale.x = 0.3f;
-        scale.y = 0.3f;
-        scale.z = 0.3f;
+            model.translate(cubeTrans[i].position);
+            cubeTrans[i].rotation.add(0.05f, 0.05f, 0.05f);
+            model.rotate((float) Math.toRadians(cubeTrans[i].rotation.x), new Vector3f(1.f, 0.f, 0.f));
+            model.rotate((float) Math.toRadians(cubeTrans[i].rotation.y), new Vector3f(0.f, 1.f, 0.f));
+            model.rotate((float) Math.toRadians(cubeTrans[i].rotation.z), new Vector3f(0.f, 0.f, 1.f));
+            model.scale(cubeTrans[i].scale);
 
-        model.identity();
-        model.translate(position);
-        rotation.add(0.01f, 0.01f, 0.01f);
-        model.rotateX(rotation.x).rotateY(rotation.y).rotateZ(rotation.z);
-        model.scale(scale);
+            Matrix4f pvm = camera.getProjectionMatrix().mul(camera.getViewMatrix()).mul(model);
 
-        Matrix4f pvm = camera.getProjectionMatrix().mul(camera.getViewMatrix()).mul(model);
+            shader.setMatrix4f("pvm", pvm);
+            shader.setBool("wireframeMode", wireframeMode);
 
-        shader.setMatrix4f("pvm", pvm);
-        shader.setBool("wireframeMode", wireframeMode);
+            texture.bind(gl);
+            gl.glBindVertexArray(vao_polygon);
+            gl.glDrawArrays(GL.GL_TRIANGLES, 0, cube.length / 11);
+        }
 
-        gl.glBindVertexArray(vao_polygon);
-        gl.glDrawElements(GL.GL_TRIANGLES, indices.length, GL.GL_UNSIGNED_INT, 0);
-
-        model.identity();
-        model.scale(0.25f);
-
-        Matrix4f pvm1 = camera.getProjectionMatrix().mul(camera.getViewMatrix()).mul(model);
-
-        shader.setMatrix4f("pvm", pvm1);
-        shader.setBool("wireframeMode", wireframeMode);
-
-        gl.glBindVertexArray(vao_polygon);
-        gl.glDrawElements(GL.GL_TRIANGLES, indices.length, GL.GL_UNSIGNED_INT, 0);
-
-        model.identity();
-        position.y = (float)(1 + 0.8f * Math.cos(System.currentTimeMillis() * 0.001));
-        position.x = (float)(1 + 0.8f * Math.sin(System.currentTimeMillis() * 0.001));
-        model.translate(position);
-        model.scale(0.2f);
-
-        Matrix4f pvm2 = camera.getProjectionMatrix().mul(camera.getViewMatrix()).mul(model);
-
-        shader.setMatrix4f("pvm", pvm2);
-        shader.setBool("wireframeMode", wireframeMode);
-
-        gl.glBindVertexArray(vao_polygon);
-        gl.glDrawElements(GL.GL_TRIANGLES, indices.length, GL.GL_UNSIGNED_INT, 0);
+//        position.x = (float)(0.8f * Math.cos(System.currentTimeMillis() * 0.001));
+//        position.y = (float)(0.8f * Math.sin(System.currentTimeMillis() * 0.001));
+//
+//        scale.x = 0.3f;
+//        scale.y = 0.3f;
+//        scale.z = 0.3f;
+//
+//        model.identity();
+//        model.translate(position);
+//        rotation.add(0.01f, 0.01f, 0.01f);
+//        model.rotateX(rotation.x).rotateY(rotation.y).rotateZ(rotation.z);
+//        model.scale(scale);
+//
+//        Matrix4f pvm = camera.getProjectionMatrix().mul(camera.getViewMatrix()).mul(model);
+//
+//        shader.setMatrix4f("pvm", pvm);
+//        shader.setBool("wireframeMode", wireframeMode);
+//
+//        texture.bind(gl);
+//        gl.glBindVertexArray(vao_polygon);
+//        gl.glDrawArrays(GL.GL_TRIANGLES, 0, cube.length / 11);
+//
+//        model.identity();
+//        model.scale(0.25f);
+//
+//        Matrix4f pvm1 = camera.getProjectionMatrix().mul(camera.getViewMatrix()).mul(model);
+//
+//        shader.setMatrix4f("pvm", pvm1);
+//        shader.setBool("wireframeMode", wireframeMode);
+//
+//        texture.bind(gl);
+//        gl.glBindVertexArray(vao_polygon);
+//        gl.glDrawArrays(GL.GL_TRIANGLES, 0, cube.length / 11);
+//
+//        model.identity();
+//        position.y = (float)(1 + 0.8f * Math.cos(System.currentTimeMillis() * 0.001));
+//        position.x = (float)(1 + 0.8f * Math.sin(System.currentTimeMillis() * 0.001));
+//        model.translate(position);
+//        model.scale(0.2f);
+//
+//        Matrix4f pvm2 = camera.getProjectionMatrix().mul(camera.getViewMatrix()).mul(model);
+//
+//        shader.setMatrix4f("pvm", pvm2);
+//        shader.setBool("wireframeMode", wireframeMode);
+//
+//        texture.bind(gl);
+//        gl.glBindVertexArray(vao_polygon);
+//        gl.glDrawArrays(GL.GL_TRIANGLES, 0, cube.length / 11);
     }
 
     @Override
