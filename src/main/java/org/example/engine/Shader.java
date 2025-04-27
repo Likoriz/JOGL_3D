@@ -2,6 +2,8 @@ package org.example.engine;
 
 import com.jogamp.opengl.*;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -118,6 +120,28 @@ public class Shader {
              default:
                  System.out.println("Shader failure: No such uniform vector size!");
          }
+    }
+
+    public void setVec3(String name, Vector3f vec) {
+        FloatBuffer modelBuffer = ByteBuffer.allocateDirect(16 * Float.BYTES)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer();
+        vec.get(modelBuffer);
+        modelBuffer.flip();
+
+        int transformLoc = gl.glGetUniformLocation(programID, name);
+        gl.glUniform3f(transformLoc, vec.x, vec.y, vec.z);
+    }
+
+    public void setVec4(String name, Vector4f vec) {
+        FloatBuffer modelBuffer = ByteBuffer.allocateDirect(16 * Float.BYTES)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer();
+        vec.get(modelBuffer);
+        modelBuffer.flip();
+
+        int transformLoc = gl.glGetUniformLocation(programID, name);
+        gl.glUniform4f(transformLoc, vec.x, vec.y, vec.z, vec.w);
     }
 
     public void setMatrix4f(String name, Matrix4f model) {

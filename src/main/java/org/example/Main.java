@@ -18,11 +18,11 @@ import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 
 public class Main implements GLEventListener {
     private static GL4 gl;
     private Shader shader;
+    private Shader lightShader;
     private static InputHandler inputHandler;
 
     private final float[] cube = {
@@ -72,14 +72,12 @@ public class Main implements GLEventListener {
 
     private final int cubeCount = 200;
     ModelTransform[] cubeTrans;
+    ModelTransform lightTrans;
 
     private int vbo_polygon;
     private int vao_polygon;
 
-    private Matrix4f model;
-    private final Vector3f scale = new Vector3f(1.0f);
-    private final Vector3f position = new Vector3f(0.0f);
-    private final Vector3f rotation = new Vector3f(0.0f);
+    private Matrix4f model = new Matrix4f();
 
     private static Camera camera = new Camera(new Vector3f(0.0f, 0.0f, -2.0f));
     private long oldTime = System.currentTimeMillis();
@@ -87,8 +85,13 @@ public class Main implements GLEventListener {
     private float deltaTime;
 
     private Texture texture;
+
     public boolean wireframeMode = false;
     public boolean switchMode = false;
+
+    private Vector3f lightPos = new Vector3f(5.0f, 0.0f, 0.0f);
+    private Vector3f lightColor = new Vector3f(1.0f, 1.0f, 1.0f);
+    private Vector3f ambientColor = new Vector3f(1.0f, 1.0f, 1.0f);
 
     public static void main(String[] args) throws AWTException {
         JFrame frame = new JFrame("JOGL 3D Window");
@@ -129,10 +132,15 @@ public class Main implements GLEventListener {
         gl = drawable.getGL().getGL4();
         System.out.println("Init OpenGL: " + gl);
 
-        String vertexShaderPath = "shaders/vertexShader.glsl";
-        String fragmentShaderPath = "shaders/fragmentShader.glsl";
+        String vertexShaderPath = "shaders/vertexShader.vert";
+        String fragmentShaderPath = "shaders/fragmentShader.frag";
 
         shader = new Shader(gl, vertexShaderPath, fragmentShaderPath);
+
+        String lightVertexShaderPath = "shaders/light.vert";
+        String lightFragmentShaderPath = "shaders/light.frag";
+
+        lightShader = new Shader(gl, lightVertexShaderPath, lightFragmentShaderPath);
 
         try {
             InputStream textureStream = getClass().getClassLoader().getResourceAsStream("images/old_01.png");
@@ -161,10 +169,6 @@ public class Main implements GLEventListener {
         }
 
         cubeTrans = new ModelTransform[cubeCount];
-        for (int i = 0; i < cubeCount; i++) {
-            cubeTrans[i] = new ModelTransform();
-        }
-
         Random rand = new Random();
         for (int i = 0; i < cubeCount; i++) {
             float scale = (rand.nextInt(6) + 1) / 20.0f;
@@ -179,6 +183,13 @@ public class Main implements GLEventListener {
                 i--;
             }
         }
+
+        lightTrans = new ModelTransform();
+        float scale = 0.1f;
+
+        lightTrans.position = new Vector3f(0.0f, 0.0f, 0.0f);
+        lightTrans.rotation = new Vector3f(0.0f, 0.0f, 0.0f);
+        lightTrans.setScale(scale);
 
         int[] vao = new int[1];
         gl.glGenVertexArrays(1, vao, 0);
@@ -215,8 +226,6 @@ public class Main implements GLEventListener {
         gl.glEnable(GL.GL_CULL_FACE);
         gl.glFrontFace(gl.GL_CCW);
         switchPolygonMode();
-
-        //model = new Matrix4f();
     }
 
     @Override
@@ -227,18 +236,40 @@ public class Main implements GLEventListener {
 
         inputHandler.update(deltaTime);
 
-        gl.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        gl.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
-
-        shader.use();
 
         if (switchMode) {
             switchPolygonMode();
             switchMode = false;
         }
 
+        //LIGHT
+        lightShader.use();
+
+        model.identity();
+
+        lightPos.x = 4.0f * (float)(0.8f * Math.cos(System.currentTimeMillis() * 0.001));
+        lightPos.z = 4.0f * (float)(0.8f * Math.sin(System.currentTimeMillis() * 0.001));
+        lightTrans.position = lightPos;
+
+        model.translate(lightTrans.position);
+        model.scale(lightTrans.scale);
+
+        Matrix4f lp = camera.getProjectionMatrix();
+        Matrix4f lv = camera.getViewMatrix();
+        Matrix4f lpv = lp.mul(lv);
+
+        lightShader.setMatrix4f("pv", lpv);
+        lightShader.setMatrix4f("model", model);
+        lightShader.setVec3("lightColor", lightColor);
+
+        texture.bind(gl);
+        gl.glBindVertexArray(vao_polygon);
+        gl.glDrawArrays(GL.GL_TRIANGLES, 0, cube.length / 11);
+
+        //CUBES
         for (int i = 0; i < cubeCount; i++) {
-            model = new Matrix4f();
             model.identity();
 
             model.translate(cubeTrans[i].position);
@@ -248,10 +279,19 @@ public class Main implements GLEventListener {
             model.rotate((float) Math.toRadians(cubeTrans[i].rotation.z), new Vector3f(0.f, 0.f, 1.f));
             model.scale(cubeTrans[i].scale);
 
-            Matrix4f pvm = camera.getProjectionMatrix().mul(camera.getViewMatrix()).mul(model);
+            Matrix4f p = camera.getProjectionMatrix();
+            Matrix4f v = camera.getViewMatrix();
+            Matrix4f pv = p.mul(v);
 
-            shader.setMatrix4f("pvm", pvm);
+            shader.use();
+
+            shader.setMatrix4f("pv", pv);
+            shader.setMatrix4f("model", model);
             shader.setBool("wireframeMode", wireframeMode);
+            shader.setVec3("viewPos", camera.position);
+            shader.setVec3("lightPos", lightPos);
+            shader.setVec3("lightColor", lightColor);
+            shader.setVec3("ambientColor", ambientColor);
 
             texture.bind(gl);
             gl.glBindVertexArray(vao_polygon);

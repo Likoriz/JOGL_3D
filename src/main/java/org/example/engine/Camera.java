@@ -17,7 +17,7 @@ public class Camera {
     final float ZFAR = 1000.f;
     final float ASPECTRATIO = 16.f/9.f;
 
-    Vector3f position = new Vector3f();
+    public Vector3f position = new Vector3f();
     Vector3f front = new Vector3f();
     Vector3f up = new Vector3f();
     Vector3f right = new Vector3f();
@@ -90,7 +90,6 @@ public class Camera {
         position.add(new Vector3f(front).mul(velocity * direction.z));
         position.add(new Vector3f(right).mul(velocity * direction.x));
         position.add(new Vector3f(up).mul(velocity * direction.y));
-        //System.out.println("AFTER MOVE: Camera pos: " + this.position + " dirs: " + dirs + " vel: " + velocity + " deltaTime" + deltaTime);
 
         updateCameraVectors();
     }
