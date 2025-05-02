@@ -90,7 +90,7 @@ public class Main implements GLEventListener {
 
     //private Vector3f lightPos = new Vector3f(5.0f, 0.0f, 0.0f);
     //private Vector3f lightColor = new Vector3f(1.0f, 1.0f, 1.0f);
-    Light light1;
+    PointLight light1;
     //private Vector3f ambientColor = new Vector3f(1.0f, 1.0f, 1.0f);
 
     public static void main(String[] args) throws AWTException {
@@ -168,11 +168,14 @@ public class Main implements GLEventListener {
             e.printStackTrace();
         }
 
-        light1 = new Light();
+        light1 = new PointLight();
         light1.position = new Vector3f(5.0f, 0.0f, 0.0f);
         light1.ambient = new Vector3f(0.2f, 0.2f, 0.2f);
         light1.diffuse = new Vector3f(0.5f, 0.5f, 0.5f);
         light1.specular = new Vector3f(1.0f, 1.0f, 1.0f);
+        light1.constant = 1.0f;
+        light1.linear = 0.14f;
+        light1.quadratic = 0.12f;
 
         cubeMaterial = new Material[3];
         for (int i = 0; i < 3; i++)
@@ -323,6 +326,9 @@ public class Main implements GLEventListener {
             shader.setVec3("light.ambient", light1.ambient);
             shader.setVec3("light.diffuse", light1.diffuse);
             shader.setVec3("light.specular", light1.specular);
+            shader.setFloat("light.constant", light1.constant);
+            shader.setFloat("light.linear", light1.linear);
+            shader.setFloat("light.quadratic", light1.quadratic);
 
             shader.setVec3("material.ambient", cubeMaterial[cubeMat[i]].ambient);
             shader.setVec3("material.diffuse", cubeMaterial[cubeMat[i]].diffuse);

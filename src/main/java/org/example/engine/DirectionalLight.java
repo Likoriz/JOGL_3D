@@ -2,8 +2,8 @@ package org.example.engine;
 
 import org.joml.Vector3f;
 
-public class Light {
-    public Vector3f position;
+public class DirectionalLight {
+    public Vector3f direction;
 
     public Vector3f ambient;
     public Vector3f diffuse;
