@@ -99,7 +99,7 @@ public class Shader {
         gl.glUniform1i(gl.glGetUniformLocation(programID, name), value);
     }
 
-    private void setFloat(String name, float value) {
+    public void setFloat(String name, float value) {
         gl.glUniform1f(gl.glGetUniformLocation(programID, name), value);
     }
 

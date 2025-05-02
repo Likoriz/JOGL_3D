@@ -5,10 +5,7 @@ import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.FPSAnimator;
 import com.jogamp.opengl.util.texture.Texture;
 import com.jogamp.opengl.util.texture.TextureIO;
-import org.example.engine.Camera;
-import org.example.engine.InputHandler;
-import org.example.engine.ModelTransform;
-import org.example.engine.Shader;
+import org.example.engine.*;
 import org.joml.Matrix4f;
 import org.joml.Random;
 import org.joml.Vector3f;
@@ -73,6 +70,8 @@ public class Main implements GLEventListener {
     private final int cubeCount = 200;
     ModelTransform[] cubeTrans;
     ModelTransform lightTrans;
+    Material[] cubeMaterial;
+    int[] cubeMat;
 
     private int vbo_polygon;
     private int vao_polygon;
@@ -89,9 +88,10 @@ public class Main implements GLEventListener {
     public boolean wireframeMode = false;
     public boolean switchMode = false;
 
-    private Vector3f lightPos = new Vector3f(5.0f, 0.0f, 0.0f);
-    private Vector3f lightColor = new Vector3f(1.0f, 1.0f, 1.0f);
-    private Vector3f ambientColor = new Vector3f(1.0f, 1.0f, 1.0f);
+    //private Vector3f lightPos = new Vector3f(5.0f, 0.0f, 0.0f);
+    //private Vector3f lightColor = new Vector3f(1.0f, 1.0f, 1.0f);
+    Light light1;
+    //private Vector3f ambientColor = new Vector3f(1.0f, 1.0f, 1.0f);
 
     public static void main(String[] args) throws AWTException {
         JFrame frame = new JFrame("JOGL 3D Window");
@@ -168,6 +168,33 @@ public class Main implements GLEventListener {
             e.printStackTrace();
         }
 
+        light1 = new Light();
+        light1.position = new Vector3f(5.0f, 0.0f, 0.0f);
+        light1.ambient = new Vector3f(0.2f, 0.2f, 0.2f);
+        light1.diffuse = new Vector3f(0.5f, 0.5f, 0.5f);
+        light1.specular = new Vector3f(1.0f, 1.0f, 1.0f);
+
+        cubeMaterial = new Material[3];
+        for (int i = 0; i < 3; i++)
+            cubeMaterial[i] = new Material();
+        //Pearl
+        cubeMaterial[0].ambient = new Vector3f(0.25f, 0.20725f, 0.20725f);
+        cubeMaterial[0].diffuse = new Vector3f(1f, 0.829f, 0.829f);
+        cubeMaterial[0].specular = new Vector3f(0.296648f, 0.296648f, 0.296648f);
+        cubeMaterial[0].shininess = 12.f;
+        //Chrome
+        cubeMaterial[1].ambient = new Vector3f(0.25f, 0.25f, 0.25f);
+        cubeMaterial[1].diffuse = new Vector3f(0.4f, 0.4f, 0.4f);
+        cubeMaterial[1].specular = new Vector3f(0.774597f, 0.774597f, 0.774597f);
+        cubeMaterial[1].shininess = 77.f;
+        //Ruby
+        cubeMaterial[2].ambient = new Vector3f(0.1745f, 0.01175f, 0.01175f);
+        cubeMaterial[2].diffuse = new Vector3f(0.61424f, 0.04136f, 0.04136f);
+        cubeMaterial[2].specular = new Vector3f(0.727811f, 0.626959f, 0.626959f);
+        cubeMaterial[2].shininess = 77.f;
+
+        cubeMat = new int[cubeCount];
+
         cubeTrans = new ModelTransform[cubeCount];
         Random rand = new Random();
         for (int i = 0; i < cubeCount; i++) {
@@ -178,6 +205,8 @@ public class Main implements GLEventListener {
             cubeTrans[i].position = new Vector3f((rand.nextInt(201) - 100) / 50.0f,(rand.nextInt(201) - 100) / 50.0f,(rand.nextInt(201) - 100) / 50.0f);
             cubeTrans[i].rotation = new Vector3f(rand.nextFloat() * 360.0f, rand.nextFloat() * 360.0f, rand.nextFloat() * 360.0f);
             cubeTrans[i].setScale(scale);
+
+            cubeMat[i] = rand.nextInt(3);
 
             if (cubeTrans[i].position.length() < 0.7f) {
                 i--;
@@ -249,9 +278,9 @@ public class Main implements GLEventListener {
 
         model.identity();
 
-        lightPos.x = 4.0f * (float)(0.8f * Math.cos(System.currentTimeMillis() * 0.001));
-        lightPos.z = 4.0f * (float)(0.8f * Math.sin(System.currentTimeMillis() * 0.001));
-        lightTrans.position = lightPos;
+        light1.position.x = 4.0f * (float)(0.8f * Math.cos(System.currentTimeMillis() * 0.001));
+        light1.position.z = 4.0f * (float)(0.8f * Math.sin(System.currentTimeMillis() * 0.001));
+        lightTrans.position = light1.position;
 
         model.translate(lightTrans.position);
         model.scale(lightTrans.scale);
@@ -262,7 +291,7 @@ public class Main implements GLEventListener {
 
         lightShader.setMatrix4f("pv", lpv);
         lightShader.setMatrix4f("model", model);
-        lightShader.setVec3("lightColor", lightColor);
+        lightShader.setVec3("lightColor", light1.specular);
 
         texture.bind(gl);
         gl.glBindVertexArray(vao_polygon);
@@ -289,9 +318,16 @@ public class Main implements GLEventListener {
             shader.setMatrix4f("model", model);
             shader.setBool("wireframeMode", wireframeMode);
             shader.setVec3("viewPos", camera.position);
-            shader.setVec3("lightPos", lightPos);
-            shader.setVec3("lightColor", lightColor);
-            shader.setVec3("ambientColor", ambientColor);
+            //shader.setVec3("lightPos", lightPos);
+            shader.setVec3("light.position", light1.position);
+            shader.setVec3("light.ambient", light1.ambient);
+            shader.setVec3("light.diffuse", light1.diffuse);
+            shader.setVec3("light.specular", light1.specular);
+
+            shader.setVec3("material.ambient", cubeMaterial[cubeMat[i]].ambient);
+            shader.setVec3("material.diffuse", cubeMaterial[cubeMat[i]].diffuse);
+            shader.setVec3("material.specular", cubeMaterial[cubeMat[i]].specular);
+            shader.setFloat("material.shininess", cubeMaterial[cubeMat[i]].shininess);
 
             texture.bind(gl);
             gl.glBindVertexArray(vao_polygon);
