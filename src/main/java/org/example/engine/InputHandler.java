@@ -1,5 +1,6 @@
 package org.example.engine;
 
+import java.awt.*;
 import java.awt.event.*;
 import java.util.Arrays;
 
@@ -30,17 +31,17 @@ public class InputHandler implements KeyListener, MouseListener, MouseMotionList
     private int getMovementDirection() {
         int dir = 0;
         if (keys[KeyEvent.VK_W])
-            dir |= Camera_Movement.CAM_FORWARD.getValue();
+            dir |= CameraMovement.CAM_FORWARD.getValue();
         if (keys[KeyEvent.VK_S])
-            dir |= Camera_Movement.CAM_BACKWARD.getValue();
+            dir |= CameraMovement.CAM_BACKWARD.getValue();
         if (keys[KeyEvent.VK_A])
-            dir |= Camera_Movement.CAM_LEFT.getValue();
+            dir |= CameraMovement.CAM_LEFT.getValue();
         if (keys[KeyEvent.VK_D])
-            dir |= Camera_Movement.CAM_RIGHT.getValue();
+            dir |= CameraMovement.CAM_RIGHT.getValue();
         if (keys[KeyEvent.VK_Q])
-            dir |= Camera_Movement.CAM_UP.getValue();
+            dir |= CameraMovement.CAM_UP.getValue();
         if (keys[KeyEvent.VK_E])
-            dir |= Camera_Movement.CAM_DOWN.getValue();
+            dir |= CameraMovement.CAM_DOWN.getValue();
 
         return dir;
     }
@@ -75,23 +76,55 @@ public class InputHandler implements KeyListener, MouseListener, MouseMotionList
     public void keyPressed(KeyEvent e) {
         keys[e.getKeyCode()] = true;
 
-        switch(e.getKeyChar()) {
+        switch(e.getKeyCode()) {
             case KeyEvent.VK_SPACE:
                 mainInstance.wireframeMode = !(mainInstance.wireframeMode);
-                //mainInstance.switchPolygonMode();
                 mainInstance.switchMode = true;
+                break;
+            case KeyEvent.VK_NUMPAD0:
+                mainInstance.backgroundColor = Color.WHITE;
+                break;
+            case KeyEvent.VK_NUMPAD1:
+                mainInstance.backgroundColor = Color.BLACK;
+                break;
+            case KeyEvent.VK_NUMPAD2:
+                mainInstance.backgroundColor = Color.RED;
+                break;
+            case KeyEvent.VK_NUMPAD3:
+                mainInstance.backgroundColor = Color.GREEN;
+                break;
+            case KeyEvent.VK_NUMPAD4:
+                mainInstance.backgroundColor = Color.BLUE;
+                break;
+            case KeyEvent.VK_NUMPAD5:
+                mainInstance.backgroundColor = new Color(140, 204, 217);
+                break;
+            case KeyEvent.VK_1:
+                mainInstance.lightType = 1;
+                break;
+            case KeyEvent.VK_2:
+                mainInstance.lightType = 2;
+                break;
+            case KeyEvent.VK_3:
+                mainInstance.lightType = 3;
                 break;
         }
     }
+
     @Override
-    public void keyReleased(KeyEvent e) { keys[e.getKeyCode()] = false; }
+    public void keyReleased(KeyEvent e) {
+        keys[e.getKeyCode()] = false;
+    }
+
     @Override
     public void keyTyped(KeyEvent e) {}
 
     @Override
     public void mouseClicked(MouseEvent e) {}
+
     @Override
     public void mouseEntered(MouseEvent e) {}
+
     @Override
     public void mouseExited(MouseEvent e) {}
 

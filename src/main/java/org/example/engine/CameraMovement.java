@@ -1,6 +1,6 @@
 package org.example.engine;
 
-public enum Camera_Movement {
+public enum CameraMovement {
     CAM_FORWARD(1),
     CAM_BACKWARD(2),
     CAM_RIGHT(4),
@@ -10,7 +10,7 @@ public enum Camera_Movement {
 
     private final int value;
 
-    Camera_Movement(int value) {
+    CameraMovement(int value) {
         this.value = value;
     }
 

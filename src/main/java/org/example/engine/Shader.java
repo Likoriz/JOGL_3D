@@ -95,7 +95,7 @@ public class Shader {
         gl.glUniform1i(gl.glGetUniformLocation(programID, name), Boolean.compare(value, false));
     }
 
-    private void setInt(String name, int value) {
+    public void setInt(String name, int value) {
         gl.glUniform1i(gl.glGetUniformLocation(programID, name), value);
     }
 

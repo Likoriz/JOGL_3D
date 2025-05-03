@@ -3,7 +3,7 @@ package org.example.engine;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
-import static org.example.engine.Camera_Movement.*;
+import static org.example.engine.CameraMovement.*;
 
 public class Camera {
     final float YAW = 90.0f;
@@ -18,8 +18,8 @@ public class Camera {
     final float ASPECTRATIO = 16.f/9.f;
 
     public Vector3f position = new Vector3f();
-    Vector3f front = new Vector3f();
-    Vector3f up = new Vector3f();
+    public Vector3f front = new Vector3f();
+    public Vector3f up = new Vector3f();
     Vector3f right = new Vector3f();
     Vector3f worldUp = new Vector3f();
 

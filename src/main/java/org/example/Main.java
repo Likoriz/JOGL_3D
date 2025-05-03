@@ -21,6 +21,8 @@ public class Main implements GLEventListener {
     private Shader shader;
     private Shader lightShader;
     private static InputHandler inputHandler;
+    public Color backgroundColor = Color.BLACK;
+    public int lightType = 2;
 
     private final float[] cube = {
             //position			normal					texture				color
@@ -88,10 +90,9 @@ public class Main implements GLEventListener {
     public boolean wireframeMode = false;
     public boolean switchMode = false;
 
-    //private Vector3f lightPos = new Vector3f(5.0f, 0.0f, 0.0f);
-    //private Vector3f lightColor = new Vector3f(1.0f, 1.0f, 1.0f);
-    PointLight light1;
-    //private Vector3f ambientColor = new Vector3f(1.0f, 1.0f, 1.0f);
+    DirectionalLight light1;
+    PointLight light2;
+    Light light3;
 
     public static void main(String[] args) throws AWTException {
         JFrame frame = new JFrame("JOGL 3D Window");
@@ -168,14 +169,31 @@ public class Main implements GLEventListener {
             e.printStackTrace();
         }
 
-        light1 = new PointLight();
-        light1.position = new Vector3f(5.0f, 0.0f, 0.0f);
-        light1.ambient = new Vector3f(0.2f, 0.2f, 0.2f);
-        light1.diffuse = new Vector3f(0.5f, 0.5f, 0.5f);
-        light1.specular = new Vector3f(1.0f, 1.0f, 1.0f);
-        light1.constant = 1.0f;
-        light1.linear = 0.14f;
-        light1.quadratic = 0.12f;
+        light1 = new DirectionalLight();
+        light1.direction = new Vector3f(-1.0f, -1.0f, -1.0f);
+        light1.ambient = new Vector3f(0.3f, 0.3f, 0.3f);
+        light1.diffuse = new Vector3f(0.6f, 0.85f, 1.0f);
+        light1.specular = new Vector3f(0.06f, 0.085f, 0.1f);
+
+        light2 = new PointLight();
+        light2.position = new Vector3f(0.0f, 0.0f, 0.0f);
+        light2.ambient = new Vector3f(0.2f, 0.2f, 0.2f);
+        light2.diffuse = new Vector3f(1.0f, 1.0f, 1.0f);
+        light2.specular = new Vector3f(3.0f, 3.0f, 3.0f);
+        light2.constant = 1.0f;
+        light2.linear = 0.14f;
+        light2.quadratic = 0.12f;
+
+        light3 = new Light();
+        light3.position = new Vector3f(-3.0f, -3.0f, -3.0f);
+        light3.direction = new Vector3f(1.0f, 1.0f, 1.0f);
+        light3.cutOff = (float) Math.toRadians(10.0f);
+        light3.ambient = new Vector3f(0.2f, 0.2f, 0.2f);
+        light3.diffuse = new Vector3f(1.0f, 1.0f, 1.0f);
+        light3.specular = new Vector3f(3.0f, 3.0f, 3.0f);
+        light3.constant = 0.9f;
+        light3.linear = 0.1f;
+        light3.quadratic = 0.09f;
 
         cubeMaterial = new Material[3];
         for (int i = 0; i < 3; i++)
@@ -268,7 +286,7 @@ public class Main implements GLEventListener {
 
         inputHandler.update(deltaTime);
 
-        gl.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        gl.glClearColor(backgroundColor.getRed() / 255f, backgroundColor.getGreen() / 255f, backgroundColor.getBlue() / 255f, backgroundColor.getAlpha() / 255f);
         gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
         if (switchMode) {
@@ -281,9 +299,12 @@ public class Main implements GLEventListener {
 
         model.identity();
 
-        light1.position.x = 4.0f * (float)(0.8f * Math.cos(System.currentTimeMillis() * 0.001));
-        light1.position.z = 4.0f * (float)(0.8f * Math.sin(System.currentTimeMillis() * 0.001));
-        lightTrans.position = light1.position;
+        //light1.position.x = 4.0f * (float)(0.8f * Math.cos(System.currentTimeMillis() * 0.001));
+        //light1.position.z = 4.0f * (float)(0.8f * Math.sin(System.currentTimeMillis() * 0.001));
+        lightTrans.position = light2.position;
+
+        light3.position = new Vector3f(camera.position).sub(new Vector3f(camera.up).mul(0.3f));
+        light3.direction = camera.front;
 
         model.translate(lightTrans.position);
         model.scale(lightTrans.scale);
@@ -294,41 +315,85 @@ public class Main implements GLEventListener {
 
         lightShader.setMatrix4f("pv", lpv);
         lightShader.setMatrix4f("model", model);
-        lightShader.setVec3("lightColor", light1.specular);
+
+        switch (lightType) {
+            case 1:
+                lightShader.setVec3("lightColor", light1.specular);
+                break;
+            case 2:
+                lightShader.setVec3("lightColor", light2.specular);
+                break;
+            case 3:
+                lightShader.setVec3("lightColor", light3.specular);
+                break;
+        }
 
         texture.bind(gl);
         gl.glBindVertexArray(vao_polygon);
         gl.glDrawArrays(GL.GL_TRIANGLES, 0, cube.length / 11);
+
+        shader.use();
+
+        shader.setInt("light.type", lightType);
+
+        shader.setBool("wireframeMode", wireframeMode);
+        shader.setVec3("viewPos", camera.position);
+
+        Matrix4f p = camera.getProjectionMatrix();
+        Matrix4f v = camera.getViewMatrix();
+        Matrix4f pv = p.mul(v);
+
+        shader.setMatrix4f("pv", pv);
+
+        switch (lightType) {
+            case 1: //DIRECTIONAL LIGHT
+                shader.setVec3("light.position", light1.direction);
+
+                shader.setVec3("light.ambient", light1.ambient);
+                shader.setVec3("light.diffuse", light1.diffuse);
+                shader.setVec3("light.specular", light1.specular);
+
+                break;
+            case 2: //POINT LIGHT
+                shader.setVec3("light.position", light2.position);
+
+                shader.setVec3("light.ambient", light2.ambient);
+                shader.setVec3("light.diffuse", light2.diffuse);
+                shader.setVec3("light.specular", light2.specular);
+
+                shader.setFloat("light.constant", light2.constant);
+                shader.setFloat("light.linear", light2.linear);
+                shader.setFloat("light.quadratic", light2.quadratic);
+
+                break;
+            case 3:
+                shader.setVec3("light.position", light3.position);
+                shader.setVec3("light.direction", light3.direction);
+                shader.setFloat("light.cutOff", light3.cutOff);
+
+                shader.setVec3("light.ambient", light3.ambient);
+                shader.setVec3("light.diffuse", light3.diffuse);
+                shader.setVec3("light.specular", light3.specular);
+
+                shader.setFloat("light.constant", light3.constant);
+                shader.setFloat("light.linear", light3.linear);
+                shader.setFloat("light.quadratic", light3.quadratic);
+
+                break;
+        }
 
         //CUBES
         for (int i = 0; i < cubeCount; i++) {
             model.identity();
 
             model.translate(cubeTrans[i].position);
-            cubeTrans[i].rotation.add(0.05f, 0.05f, 0.05f);
-            model.rotate((float) Math.toRadians(cubeTrans[i].rotation.x), new Vector3f(1.f, 0.f, 0.f));
-            model.rotate((float) Math.toRadians(cubeTrans[i].rotation.y), new Vector3f(0.f, 1.f, 0.f));
-            model.rotate((float) Math.toRadians(cubeTrans[i].rotation.z), new Vector3f(0.f, 0.f, 1.f));
+//            cubeTrans[i].rotation.add(0.05f, 0.05f, 0.05f);
+//            model.rotate((float) Math.toRadians(cubeTrans[i].rotation.x), new Vector3f(1.f, 0.f, 0.f));
+//            model.rotate((float) Math.toRadians(cubeTrans[i].rotation.y), new Vector3f(0.f, 1.f, 0.f));
+//            model.rotate((float) Math.toRadians(cubeTrans[i].rotation.z), new Vector3f(0.f, 0.f, 1.f));
             model.scale(cubeTrans[i].scale);
 
-            Matrix4f p = camera.getProjectionMatrix();
-            Matrix4f v = camera.getViewMatrix();
-            Matrix4f pv = p.mul(v);
-
-            shader.use();
-
-            shader.setMatrix4f("pv", pv);
             shader.setMatrix4f("model", model);
-            shader.setBool("wireframeMode", wireframeMode);
-            shader.setVec3("viewPos", camera.position);
-            //shader.setVec3("lightPos", lightPos);
-            shader.setVec3("light.position", light1.position);
-            shader.setVec3("light.ambient", light1.ambient);
-            shader.setVec3("light.diffuse", light1.diffuse);
-            shader.setVec3("light.specular", light1.specular);
-            shader.setFloat("light.constant", light1.constant);
-            shader.setFloat("light.linear", light1.linear);
-            shader.setFloat("light.quadratic", light1.quadratic);
 
             shader.setVec3("material.ambient", cubeMaterial[cubeMat[i]].ambient);
             shader.setVec3("material.diffuse", cubeMaterial[cubeMat[i]].diffuse);
@@ -339,55 +404,6 @@ public class Main implements GLEventListener {
             gl.glBindVertexArray(vao_polygon);
             gl.glDrawArrays(GL.GL_TRIANGLES, 0, cube.length / 11);
         }
-
-//        position.x = (float)(0.8f * Math.cos(System.currentTimeMillis() * 0.001));
-//        position.y = (float)(0.8f * Math.sin(System.currentTimeMillis() * 0.001));
-//
-//        scale.x = 0.3f;
-//        scale.y = 0.3f;
-//        scale.z = 0.3f;
-//
-//        model.identity();
-//        model.translate(position);
-//        rotation.add(0.01f, 0.01f, 0.01f);
-//        model.rotateX(rotation.x).rotateY(rotation.y).rotateZ(rotation.z);
-//        model.scale(scale);
-//
-//        Matrix4f pvm = camera.getProjectionMatrix().mul(camera.getViewMatrix()).mul(model);
-//
-//        shader.setMatrix4f("pvm", pvm);
-//        shader.setBool("wireframeMode", wireframeMode);
-//
-//        texture.bind(gl);
-//        gl.glBindVertexArray(vao_polygon);
-//        gl.glDrawArrays(GL.GL_TRIANGLES, 0, cube.length / 11);
-//
-//        model.identity();
-//        model.scale(0.25f);
-//
-//        Matrix4f pvm1 = camera.getProjectionMatrix().mul(camera.getViewMatrix()).mul(model);
-//
-//        shader.setMatrix4f("pvm", pvm1);
-//        shader.setBool("wireframeMode", wireframeMode);
-//
-//        texture.bind(gl);
-//        gl.glBindVertexArray(vao_polygon);
-//        gl.glDrawArrays(GL.GL_TRIANGLES, 0, cube.length / 11);
-//
-//        model.identity();
-//        position.y = (float)(1 + 0.8f * Math.cos(System.currentTimeMillis() * 0.001));
-//        position.x = (float)(1 + 0.8f * Math.sin(System.currentTimeMillis() * 0.001));
-//        model.translate(position);
-//        model.scale(0.2f);
-//
-//        Matrix4f pvm2 = camera.getProjectionMatrix().mul(camera.getViewMatrix()).mul(model);
-//
-//        shader.setMatrix4f("pvm", pvm2);
-//        shader.setBool("wireframeMode", wireframeMode);
-//
-//        texture.bind(gl);
-//        gl.glBindVertexArray(vao_polygon);
-//        gl.glDrawArrays(GL.GL_TRIANGLES, 0, cube.length / 11);
     }
 
     @Override
@@ -400,3 +416,4 @@ public class Main implements GLEventListener {
         gl.glViewport(0, 0, width, height);
     }
 }
+//TODO: Перевести источники света на массив
