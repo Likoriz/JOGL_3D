@@ -10,7 +10,9 @@ import org.lwjgl.assimp.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.IntBuffer;
+import java.nio.file.Paths;
 import java.util.Vector;
 
 import static org.example.Main.gl;
@@ -24,7 +26,10 @@ public class Model {
     public boolean isUVFlipped = true;
     public boolean gamma = false;
 
-    public Model(String path) {
+    public Model(String path, boolean isUVFlipped) {
+        this.meshes = new Vector<>();
+        this.texturesLoaded = new Vector<>();
+
         loadModel(path, isUVFlipped);
     }
 
@@ -36,13 +41,14 @@ public class Model {
     void loadModel(String path, boolean isUVFlipped) {
         int flags = aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace;
 
-        if (isUVFlipped) {
+        if (!isUVFlipped) {
             flags |= aiProcess_FlipUVs;
         }
 
         AIScene scene = aiImportFile(path, flags);
 
         if (scene == null) {
+            System.out.println("Wrong path");
             System.err.println("ERROR ASSIMP: " + aiGetErrorString());
             return;
         }

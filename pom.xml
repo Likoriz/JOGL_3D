@@ -36,27 +36,27 @@
         <dependency>
             <groupId>org.lwjgl</groupId>
             <artifactId>lwjgl</artifactId>
-            <version>3.3.2</version> <!-- Можно заменить на актуальную -->
+            <version>3.3.6</version> <!-- Можно заменить на актуальную -->
         </dependency>
 
         <!-- LWJGL Assimp binding -->
         <dependency>
             <groupId>org.lwjgl</groupId>
             <artifactId>lwjgl-assimp</artifactId>
-            <version>3.3.2</version>
+            <version>3.3.6</version>
         </dependency>
 
         <!-- LWJGL Native - для вашей платформы, пример для Windows x64 -->
         <dependency>
             <groupId>org.lwjgl</groupId>
             <artifactId>lwjgl</artifactId>
-            <version>3.3.2</version>
+            <version>3.3.6</version>
             <classifier>natives-windows</classifier>
         </dependency>
         <dependency>
             <groupId>org.lwjgl</groupId>
             <artifactId>lwjgl-assimp</artifactId>
-            <version>3.3.2</version>
+            <version>3.3.6</version>
             <classifier>natives-windows</classifier>
         </dependency>
 

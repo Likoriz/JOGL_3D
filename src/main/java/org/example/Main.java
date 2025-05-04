@@ -24,11 +24,12 @@ public class Main implements GLEventListener {
 
     private Shader shader;
     private Shader lightShader;
+    private Shader backpackShader;
 
     private static InputHandler inputHandler;
 
     public Color backgroundColor = Color.BLACK;
-    
+
     private static Camera camera = new Camera(new Vector3f(0.0f, 0.0f, -2.0f));
 
     private long oldTime = System.currentTimeMillis();
@@ -99,6 +100,7 @@ public class Main implements GLEventListener {
     private int vao_polygon;
 
     private Matrix4f model = new Matrix4f();
+    private Model backpack;
 
     private Texture texture;
 
@@ -158,6 +160,11 @@ public class Main implements GLEventListener {
         String lightFragmentShaderPath = "shaders/light.frag";
 
         lightShader = new Shader(gl, lightVertexShaderPath, lightFragmentShaderPath);
+
+        String backpackVertexShaderPath = "shaders/backpack.vert";
+        String backpackFragmentShaderPath = "shaders/backpack.frag";
+
+        backpackShader = new Shader(gl, backpackVertexShaderPath, backpackFragmentShaderPath);
 
         try {
             InputStream textureStream = getClass().getClassLoader().getResourceAsStream("images/old_01.png");
@@ -255,6 +262,8 @@ public class Main implements GLEventListener {
         gl.glVertexAttribPointer(3, 3, GL.GL_FLOAT, false, stride, 8 * Float.BYTES);
         gl.glEnableVertexAttribArray(3);
 
+        backpack = new Model("models/backpack/backpack.obj", false);
+
         //LIGHTS INITIALIZATION
         lightTrans = new ModelTransform();
         float scale = 0.1f;
@@ -331,27 +340,27 @@ public class Main implements GLEventListener {
 
         shader.setInt("lights_count", activeLights);
 
-        for (int i = 0; i < cubeCount; i++) {
-            model.identity();
-
-            model.translate(cubeTrans[i].position);
-            cubeTrans[i].rotation.add(0.05f, 0.05f, 0.05f);
-            model.rotate((float) Math.toRadians(cubeTrans[i].rotation.x), new Vector3f(1.f, 0.f, 0.f));
-            model.rotate((float) Math.toRadians(cubeTrans[i].rotation.y), new Vector3f(0.f, 1.f, 0.f));
-            model.rotate((float) Math.toRadians(cubeTrans[i].rotation.z), new Vector3f(0.f, 0.f, 1.f));
-            model.scale(cubeTrans[i].scale);
-
-            shader.setMatrix4f("model", model);
-
-            shader.setVec3("material.ambient", cubeMaterial[cubeMat[i]].ambient);
-            shader.setVec3("material.diffuse", cubeMaterial[cubeMat[i]].diffuse);
-            shader.setVec3("material.specular", cubeMaterial[cubeMat[i]].specular);
-            shader.setFloat("material.shininess", cubeMaterial[cubeMat[i]].shininess);
-
-            texture.bind(gl);
-            gl.glBindVertexArray(vao_polygon);
-            gl.glDrawArrays(GL.GL_TRIANGLES, 0, cube.length / 11);
-        }
+//        for (int i = 0; i < cubeCount; i++) {
+//            model.identity();
+//
+//            model.translate(cubeTrans[i].position);
+//            cubeTrans[i].rotation.add(0.05f, 0.05f, 0.05f);
+//            model.rotate((float) Math.toRadians(cubeTrans[i].rotation.x), new Vector3f(1.f, 0.f, 0.f));
+//            model.rotate((float) Math.toRadians(cubeTrans[i].rotation.y), new Vector3f(0.f, 1.f, 0.f));
+//            model.rotate((float) Math.toRadians(cubeTrans[i].rotation.z), new Vector3f(0.f, 0.f, 1.f));
+//            model.scale(cubeTrans[i].scale);
+//
+//            shader.setMatrix4f("model", model);
+//
+//            shader.setVec3("material.ambient", cubeMaterial[cubeMat[i]].ambient);
+//            shader.setVec3("material.diffuse", cubeMaterial[cubeMat[i]].diffuse);
+//            shader.setVec3("material.specular", cubeMaterial[cubeMat[i]].specular);
+//            shader.setFloat("material.shininess", cubeMaterial[cubeMat[i]].shininess);
+//
+//            texture.bind(gl);
+//            gl.glBindVertexArray(vao_polygon);
+//            gl.glDrawArrays(GL.GL_TRIANGLES, 0, cube.length / 11);
+//        }
 
         //DRAWING LAMPS
         lightShader.use();
@@ -375,6 +384,24 @@ public class Main implements GLEventListener {
         lightShader.setMatrix4f("model", model);
         lightShader.setVec3("lightColor", new Vector3f(0.2f, 0.2f, 1.0f));
         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 36);
+
+        //DRAWING BACKPACK
+        model.identity();
+        model.translate(new Vector3f(0.0f, 0.0f, 0.0f));
+        model.scale(new Vector3f(0.1f, 0.1f, 0.1f));
+        backpackShader.use();
+        backpackShader.setMatrix4f("pv", pv);
+        backpackShader.setMatrix4f("model", model);
+        backpackShader.setFloat("shininess", 64.0f);
+        backpackShader.setVec3("viewPos", camera.position);
+
+        activeLights = 0;
+        for (Light light : lights)
+            activeLights += light.putInShader(backpackShader, activeLights);
+
+        backpackShader.setInt("lights_count", activeLights);
+
+        backpack.draw(backpackShader);
     }
 
     @Override
