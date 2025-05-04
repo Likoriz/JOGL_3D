@@ -5,12 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e955916f-0b53-441c-986a-537066b70ef1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/example/engine/Mesh.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/example/engine/Texture.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/example/engine/Vertex.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/example/engine/Model.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/Main.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
