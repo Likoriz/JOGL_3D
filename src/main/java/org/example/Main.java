@@ -17,7 +17,7 @@ import java.io.InputStream;
 import java.nio.FloatBuffer;
 
 public class Main implements GLEventListener {
-    private static GL4 gl;
+    public static GL4 gl;
     private Shader shader;
     private Shader lightShader;
     private static InputHandler inputHandler;
