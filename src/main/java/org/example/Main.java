@@ -28,9 +28,7 @@ public class Main implements GLEventListener {
     private static InputHandler inputHandler;
 
     public Color backgroundColor = Color.BLACK;
-
-    //public int lightType = 2;
-
+    
     private static Camera camera = new Camera(new Vector3f(0.0f, 0.0f, -2.0f));
 
     private long oldTime = System.currentTimeMillis();
@@ -104,10 +102,6 @@ public class Main implements GLEventListener {
 
     private Texture texture;
 
-    //DirectionalLight light1;
-    //PointLight light2;
-    //Light light3;
-
     public Light flashLight;
     public Light redLamp;
     public Light blueLamp;
@@ -115,7 +109,6 @@ public class Main implements GLEventListener {
     ModelTransform lightTrans;
     Vector<Light> lights;
     int totalLights = 4;
-    int activeLights = 0;
 
     public static void main(String[] args) throws AWTException {
         JFrame frame = new JFrame("JOGL 3D Window");
@@ -191,32 +184,6 @@ public class Main implements GLEventListener {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-//        light1 = new DirectionalLight();
-//        light1.direction = new Vector3f(-1.0f, -1.0f, -1.0f);
-//        light1.ambient = new Vector3f(0.3f, 0.3f, 0.3f);
-//        light1.diffuse = new Vector3f(0.6f, 0.85f, 1.0f);
-//        light1.specular = new Vector3f(0.06f, 0.085f, 0.1f);
-//
-//        light2 = new PointLight();
-//        light2.position = new Vector3f(0.0f, 0.0f, 0.0f);
-//        light2.ambient = new Vector3f(0.2f, 0.2f, 0.2f);
-//        light2.diffuse = new Vector3f(1.0f, 1.0f, 1.0f);
-//        light2.specular = new Vector3f(3.0f, 3.0f, 3.0f);
-//        light2.constant = 1.0f;
-//        light2.linear = 0.14f;
-//        light2.quadratic = 0.12f;
-//
-//        light3 = new Light();
-//        light3.position = new Vector3f(-3.0f, -3.0f, -3.0f);
-//        light3.direction = new Vector3f(1.0f, 1.0f, 1.0f);
-//        light3.cutOff = (float) Math.toRadians(10.0f);
-//        light3.ambient = new Vector3f(0.2f, 0.2f, 0.2f);
-//        light3.diffuse = new Vector3f(1.0f, 1.0f, 1.0f);
-//        light3.specular = new Vector3f(3.0f, 3.0f, 3.0f);
-//        light3.constant = 0.9f;
-//        light3.linear = 0.1f;
-//        light3.quadratic = 0.09f;
 
         cubeMaterial = new Material[3];
         for (int i = 0; i < 3; i++)
@@ -349,38 +316,6 @@ public class Main implements GLEventListener {
             switchMode = false;
         }
 
-        //LIGHT
-        //lightShader.use();
-
-        //light1.position.x = 4.0f * (float)(0.8f * Math.cos(System.currentTimeMillis() * 0.001));
-        //light1.position.z = 4.0f * (float)(0.8f * Math.sin(System.currentTimeMillis() * 0.001));
-        //lightTrans.position = light2.position;
-
-        //light3.position = new Vector3f(camera.position).sub(new Vector3f(camera.up).mul(0.3f));
-        //light3.direction = camera.front;
-
-        //model.translate(lightTrans.position);
-        //model.scale(lightTrans.scale);
-
-        //Matrix4f lp = camera.getProjectionMatrix();
-        //Matrix4f lv = camera.getViewMatrix();
-        //Matrix4f lpv = lp.mul(lv);
-
-        //lightShader.setMatrix4f("pv", lpv);
-        //lightShader.setMatrix4f("model", model);
-
-//        switch (lightType) {
-//            case 1:
-//                lightShader.setVec3("lightColor", light1.specular);
-//                break;
-//            case 2:
-//                lightShader.setVec3("lightColor", light2.specular);
-//                break;
-//            case 3:
-//                lightShader.setVec3("lightColor", light3.specular);
-//                break;
-//        }
-
         Matrix4f p = camera.getProjectionMatrix();
         Matrix4f v = camera.getViewMatrix();
         Matrix4f pv = p.mul(v);
@@ -396,61 +331,6 @@ public class Main implements GLEventListener {
 
         shader.setInt("lights_count", activeLights);
 
-//        texture.bind(gl);
-//        gl.glBindVertexArray(vao_polygon);
-//        gl.glDrawArrays(GL.GL_TRIANGLES, 0, cube.length / 11);
-//
-//        shader.use();
-//
-//        shader.setInt("light.type", lightType);
-//
-//        shader.setBool("wireframeMode", wireframeMode);
-//        shader.setVec3("viewPos", camera.position);
-//
-//        Matrix4f p = camera.getProjectionMatrix();
-//        Matrix4f v = camera.getViewMatrix();
-//        Matrix4f pv = p.mul(v);
-//
-//        shader.setMatrix4f("pv", pv);
-//
-//        switch (lightType) {
-//            case 1: //DIRECTIONAL LIGHT
-//                shader.setVec3("light.position", light1.direction);
-//
-//                shader.setVec3("light.ambient", light1.ambient);
-//                shader.setVec3("light.diffuse", light1.diffuse);
-//                shader.setVec3("light.specular", light1.specular);
-//
-//                break;
-//            case 2: //POINT LIGHT
-//                shader.setVec3("light.position", light2.position);
-//
-//                shader.setVec3("light.ambient", light2.ambient);
-//                shader.setVec3("light.diffuse", light2.diffuse);
-//                shader.setVec3("light.specular", light2.specular);
-//
-//                shader.setFloat("light.constant", light2.constant);
-//                shader.setFloat("light.linear", light2.linear);
-//                shader.setFloat("light.quadratic", light2.quadratic);
-//
-//                break;
-//            case 3:
-//                shader.setVec3("light.position", light3.position);
-//                shader.setVec3("light.direction", light3.direction);
-//                shader.setFloat("light.cutOff", light3.cutOff);
-//
-//                shader.setVec3("light.ambient", light3.ambient);
-//                shader.setVec3("light.diffuse", light3.diffuse);
-//                shader.setVec3("light.specular", light3.specular);
-//
-//                shader.setFloat("light.constant", light3.constant);
-//                shader.setFloat("light.linear", light3.linear);
-//                shader.setFloat("light.quadratic", light3.quadratic);
-//
-//                break;
-//        }
-
-        //CUBES
         for (int i = 0; i < cubeCount; i++) {
             model.identity();
 
@@ -507,4 +387,3 @@ public class Main implements GLEventListener {
         gl.glViewport(0, 0, width, height);
     }
 }
-//TODO: Перевести источники света на массив
