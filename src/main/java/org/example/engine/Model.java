@@ -1,6 +1,8 @@
 package org.example.engine;
 
 import com.jogamp.opengl.util.texture.TextureIO;
+import org.example.data.Texture;
+import org.example.data.Vertex;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.PointerBuffer;
@@ -155,7 +157,6 @@ public class Model {
 
         return new Mesh(vertices, indices, textures);
     }
-
 
     Vector<Texture> loadMaterialTextures(AIMaterial mat, int type, String typeName) {
         Vector<Texture> textures = new Vector<>();

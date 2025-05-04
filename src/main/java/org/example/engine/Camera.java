@@ -3,7 +3,7 @@ package org.example.engine;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
-import static org.example.engine.CameraMovement.*;
+import static org.example.data.CameraMovement.*;
 
 public class Camera {
     final float YAW = 90.0f;

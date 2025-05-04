@@ -5,6 +5,7 @@ import java.awt.event.*;
 import java.util.Arrays;
 
 import org.example.Main;
+import org.example.data.CameraMovement;
 
 
 public class InputHandler implements KeyListener, MouseListener, MouseMotionListener, MouseWheelListener {
@@ -100,13 +101,28 @@ public class InputHandler implements KeyListener, MouseListener, MouseMotionList
                 mainInstance.backgroundColor = new Color(140, 204, 217);
                 break;
             case KeyEvent.VK_1:
-                mainInstance.lightType = 1;
+                if (mainInstance.sunLight.isLightOn())
+                    mainInstance.sunLight.turnOff();
+                else
+                    mainInstance.sunLight.turnOn();
                 break;
             case KeyEvent.VK_2:
-                mainInstance.lightType = 2;
+                if (mainInstance.redLamp.isLightOn())
+                    mainInstance.redLamp.turnOff();
+                else
+                    mainInstance.redLamp.turnOn();
                 break;
             case KeyEvent.VK_3:
-                mainInstance.lightType = 3;
+                if (mainInstance.blueLamp.isLightOn())
+                    mainInstance.blueLamp.turnOff();
+                else
+                    mainInstance.blueLamp.turnOn();
+                break;
+            case KeyEvent.VK_F:
+                if (mainInstance.flashLight.isLightOn())
+                    mainInstance.flashLight.turnOff();
+                else
+                    mainInstance.flashLight.turnOn();
                 break;
         }
     }

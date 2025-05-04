@@ -1,4 +1,4 @@
-package org.example.engine;
+package org.example.data;
 
 import org.joml.Vector3f;
 

@@ -1,4 +1,4 @@
-package org.example.engine;
+package org.example.data;
 
 public enum CameraMovement {
     CAM_FORWARD(1),

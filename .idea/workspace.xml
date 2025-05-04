@@ -5,8 +5,25 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e955916f-0b53-441c-986a-537066b70ef1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/example/engine/Model.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/engine/Camera.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/engine/Camera.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/engine/CameraMovement.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/data/CameraMovement.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/engine/DirectionalLight.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/engine/InputHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/engine/InputHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/engine/Light.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/engine/Light.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/engine/LightType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/data/LightType.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/engine/Material.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/data/Material.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/engine/Mesh.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/engine/Mesh.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/engine/Model.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/engine/Model.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/engine/ModelTransform.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/data/ModelTransform.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/engine/PointLight.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/engine/Texture.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/data/Texture.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/engine/Vertex.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/data/Vertex.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/shaders/fragmentShader.frag" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/shaders/fragmentShader.frag" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/shaders/light.frag" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/shaders/light.frag" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/shaders/light.vert" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/shaders/light.vert" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/shaders/vertexShader.vert" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/shaders/vertexShader.vert" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

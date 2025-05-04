@@ -2,6 +2,9 @@ package org.example.engine;
 
 import com.jogamp.common.nio.Buffers;
 import com.jogamp.opengl.GL4;
+import org.example.data.Texture;
+import org.example.data.Vertex;
+
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Vector;
