@@ -10,9 +10,7 @@ import org.lwjgl.assimp.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.IntBuffer;
-import java.nio.file.Paths;
 import java.util.Vector;
 
 import static org.example.Main.gl;
@@ -48,7 +46,6 @@ public class Model {
         AIScene scene = aiImportFile(path, flags);
 
         if (scene == null) {
-            System.out.println("Wrong path");
             System.err.println("ERROR ASSIMP: " + aiGetErrorString());
             return;
         }
@@ -153,6 +150,8 @@ public class Model {
         Vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
         textures.addAll(specularMaps);
 
+        //TODO: Спросить про Height и Ambient
+        //TODO: Спросить про отдельную загрузку текстур для других объектов той же модели
         //3. Normal maps
         Vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
         textures.addAll(normalMaps);
@@ -160,6 +159,10 @@ public class Model {
         //4. Height maps
         Vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
         textures.addAll(heightMaps);
+
+        //5. Emissive maps
+        Vector<Texture> emissiveMaps = loadMaterialTextures(material, aiTextureType_EMISSIVE, "texture_emissive");
+        textures.addAll(emissiveMaps);
 
         return new Mesh(vertices, indices, textures);
     }

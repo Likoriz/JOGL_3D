@@ -32,6 +32,7 @@ public class Mesh {
         int specularNr = 1;
         int normalNr = 1;
         int heightNr = 1;
+        int emissiveNr = 1;
 
         for (int i = 0; i < textures.size(); i++) {
             gl.glActiveTexture(GL4.GL_TEXTURE0 + i);
@@ -48,6 +49,8 @@ public class Mesh {
                 number = Integer.toString(normalNr++);
             else if (name.equals("texture_height"))
                 number = Integer.toString(heightNr++);
+            else if (name.equals("texture_emissive"))
+                number = Integer.toString(emissiveNr++);
 
             int location = gl.glGetUniformLocation(shader.getProgramID(), (name + number));
             gl.glUniform1i(location, i);

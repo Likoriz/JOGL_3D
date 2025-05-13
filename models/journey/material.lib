@@ -1,0 +1,70 @@
+# Aspose.3D Wavefront OBJ Exporter
+# Updated: 05/05/2025
+
+# Персонаж
+newmtl lambert1
+	Ka 1.0 1.0 1.0
+	Kd 1.0 1.0 1.0
+	Ks 0.0 0.0 0.0
+	Ke 0.0 0.0 0.0
+	illum 2
+	d 1.0
+	Ns 50.0
+
+	map_Kd Cloth_and_Character_Base_Color_v2.png
+	map_Ka Cloth_and_Character_Ambient_Occlusion.png
+	map_Ks Cloth_and_Character_Metallic.png
+	map_Bump Cloth_and_Character_Normal_OpenGL.png
+#	map_disp Cloth_and_Character_Height.png
+	map_emissive Cloth_and_Character_Emissive.png
+#	map_ao Cloth_and_Character_Mixed_AO.png
+
+# Бабочки
+newmtl lambert3
+	Ka 1.0 1.0 1.0
+	Kd 1.0 1.0 1.0
+	Ks 0.0 0.0 0.0
+	Ke 0.0 0.0 0.0
+	illum 2
+	d 1.0
+	Ns 10.0
+	
+newmtl lambert4
+	Ka 1.0 1.0 1.0
+	Kd 1.0 1.0 1.0
+	Ks 0.0 0.0 0.0
+	Ke 0.0 0.0 0.0
+	illum 2
+	d 1.0
+	Ns 10.0
+	
+	map_Kd butterfly_base_color.png
+	map_Bump butterfly_normal.png
+#	map_emissive butterfly_base_color.png
+
+newmtl lambert5
+	Ka 1.0 1.0 1.0
+	Kd 1.0 1.0 1.0
+	Ks 0.0 0.0 0.0
+	Ke 0.0 0.0 0.0
+	illum 2
+	d 1.0
+	Ns 10.0
+
+newmtl lambert6
+	Ka 1.0 1.0 1.0
+	Kd 1.0 1.0 1.0
+	Ks 0.0 0.0 0.0
+	Ke 0.0 0.0 0.0
+	illum 2
+	d 1.0
+	Ns 10.0
+
+newmtl lambert7
+	Ka 1.0 1.0 1.0
+	Kd 1.0 1.0 1.0
+	Ks 0.0 0.0 0.0
+	Ke 0.0 0.0 0.0
+	illum 2
+	d 1.0
+	Ns 10.0

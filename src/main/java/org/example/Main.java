@@ -3,8 +3,7 @@ package org.example;
 import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.FPSAnimator;
-import com.jogamp.opengl.util.texture.Texture;
-import com.jogamp.opengl.util.texture.TextureIO;
+//import com.jogamp.opengl.util.texture.Texture;
 import org.example.data.Material;
 import org.example.data.ModelTransform;
 import org.example.engine.*;
@@ -14,9 +13,8 @@ import org.joml.Vector3f;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.util.Vector;
 
 public class Main implements GLEventListener {
@@ -24,13 +22,17 @@ public class Main implements GLEventListener {
 
     private Shader shader;
     private Shader lightShader;
-    private Shader backpackShader;
+    //private Shader backpackShader;
+    private Shader journeyShader;
+    private Shader quadShader;
+    private Shader bloomShader;
+    private Shader blurShader;
 
     private static InputHandler inputHandler;
 
     public Color backgroundColor = Color.BLACK;
 
-    private static Camera camera = new Camera(new Vector3f(0.0f, 0.0f, -2.0f));
+    private static final Camera camera = new Camera(new Vector3f(0.0f, 0.0f, -2.0f));
 
     private long oldTime = System.currentTimeMillis();
     private long newTime;
@@ -41,9 +43,9 @@ public class Main implements GLEventListener {
 
     public static void switchPolygonMode() {
         if (wireframeMode)
-            gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_LINE);
+            gl.glPolygonMode(GL.GL_FRONT_AND_BACK, GL2GL3.GL_LINE);
         else
-            gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_FILL);
+            gl.glPolygonMode(GL.GL_FRONT_AND_BACK, GL2GL3.GL_FILL);
     }
 
     private final float[] cube = {
@@ -99,10 +101,11 @@ public class Main implements GLEventListener {
     private int vbo_polygon;
     private int vao_polygon;
 
-    private Matrix4f model = new Matrix4f();
-    private Model backpack;
+    private final Matrix4f model = new Matrix4f();
+    //private Model backpack;
+    private Model character;
 
-    private Texture texture;
+    //private Texture texture;
 
     public Light flashLight;
     public Light redLamp;
@@ -111,6 +114,23 @@ public class Main implements GLEventListener {
     ModelTransform lightTrans;
     Vector<Light> lights;
     int totalLights = 4;
+
+    private int hdrFBO;
+    private final int[] colorBuffers = new int[2];
+    private int rboDepth;
+
+    private int quadVAO = 0;
+    private int quadVBO;
+    private final float[] quadVertices = {
+            // positions        // texCoords
+            -1.0f,  1.0f, 0.0f,  0.0f, 1.0f, // top-left
+            -1.0f, -1.0f, 0.0f,  0.0f, 0.0f, // bottom-left
+            1.0f,  1.0f, 0.0f,  1.0f, 1.0f, // top-right
+            1.0f, -1.0f, 0.0f,  1.0f, 0.0f  // bottom-right
+    };
+
+    private final int[] pingpongFBO = new int[2];
+    private final int[] pingpongColorBuffers = new int[2];
 
     public static void main(String[] args) throws AWTException {
         JFrame frame = new JFrame("JOGL 3D Window");
@@ -137,7 +157,7 @@ public class Main implements GLEventListener {
         canvas.addMouseWheelListener(inputHandler);
 
         frame.getContentPane().add(canvas);
-        frame.setSize(1280, 720);
+        frame.setSize(1920, 1080);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
         canvas.requestFocusInWindow();
@@ -161,36 +181,56 @@ public class Main implements GLEventListener {
 
         lightShader = new Shader(gl, lightVertexShaderPath, lightFragmentShaderPath);
 
-        String backpackVertexShaderPath = "shaders/backpack.vert";
-        String backpackFragmentShaderPath = "shaders/backpack.frag";
+//        String backpackVertexShaderPath = "shaders/backpack.vert";
+//        String backpackFragmentShaderPath = "shaders/backpack.frag";
+//
+//        backpackShader = new Shader(gl, backpackVertexShaderPath, backpackFragmentShaderPath);
 
-        backpackShader = new Shader(gl, backpackVertexShaderPath, backpackFragmentShaderPath);
+        String journeyVertexShaderPath = "shaders/journey.vert";
+        String journeyFragmentShaderPath = "shaders/journey.frag";
 
-        try {
-            InputStream textureStream = getClass().getClassLoader().getResourceAsStream("images/old_01.png");
-            if (textureStream == null) {
-                System.err.println("Failed to load texture image: File not found");
-                return;
-            } else {
-                System.out.println("Texture stream loaded successfully");
-            }
+        journeyShader = new Shader(gl, journeyVertexShaderPath, journeyFragmentShaderPath);
 
-            texture = TextureIO.newTexture(textureStream, true, "PNG");
-            System.out.println("Texture loaded successfully: " + texture);
+        String quadVertexShaderPath = "shaders/quad.vert";
+        String quadFragmentShaderPath = "shaders/quad.frag";
 
-            gl.glBindTexture(GL.GL_TEXTURE_2D, texture.getTextureObject());
+        quadShader = new Shader(gl, quadVertexShaderPath, quadFragmentShaderPath);
 
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT);
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT);
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
+        String blurVertexShaderPath = "shaders/quad.vert";
+        String blurFragmentShaderPath = "shaders/blur.frag";
 
-            gl.glGenerateMipmap(GL.GL_TEXTURE_2D);
+        blurShader = new Shader(gl, blurVertexShaderPath, blurFragmentShaderPath);
 
-            textureStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        String bloomVertexShaderPath = "shaders/quad.vert";
+        String bloomFragmentShaderPath = "shaders/bloom.frag";
+
+        bloomShader = new Shader(gl, bloomVertexShaderPath, bloomFragmentShaderPath);
+
+//        try {
+//            InputStream textureStream = getClass().getClassLoader().getResourceAsStream("images/old_01.png");
+//            if (textureStream == null) {
+//                System.err.println("Failed to load texture image: File not found");
+//                return;
+//            } else {
+//                System.out.println("Texture stream loaded successfully");
+//            }
+//
+//            texture = TextureIO.newTexture(textureStream, true, "PNG");
+//            System.out.println("Texture loaded successfully: " + texture);
+//
+//            gl.glBindTexture(GL.GL_TEXTURE_2D, texture.getTextureObject());
+//
+//            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT);
+//            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT);
+//            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
+//            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
+//
+//            gl.glGenerateMipmap(GL.GL_TEXTURE_2D);
+//
+//            textureStream.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         cubeMaterial = new Material[3];
         for (int i = 0; i < 3; i++)
@@ -262,7 +302,8 @@ public class Main implements GLEventListener {
         gl.glVertexAttribPointer(3, 3, GL.GL_FLOAT, false, stride, 8 * Float.BYTES);
         gl.glEnableVertexAttribArray(3);
 
-        backpack = new Model("models/backpack/backpack.obj", false);
+        //backpack = new Model("models/backpack/backpack.obj", false);
+        character = new Model("models/journey/Jorney_clothes_v3.obj", true);
 
         //LIGHTS INITIALIZATION
         lightTrans = new ModelTransform();
@@ -290,22 +331,109 @@ public class Main implements GLEventListener {
         flashLight.initLikeSpotLight(new Vector3f(0.0f, 0.0f, 0.0f), new Vector3f(0.0f, 0.0f, 0.0f), (float) Math.toRadians(10.f), new Vector3f(0.0f, 0.0f, 0.0f), new Vector3f(0.7f, 0.7f, 0.6f), new Vector3f(0.8f, 0.8f, 0.6f), 1.0f, 0.1f, 0.09f);
         lights.add(flashLight);
 
+        //FRAME BUFFER
+        int [] temp = new int[1];
+        gl.glGenFramebuffers(1, temp, 0);
+        hdrFBO = temp[0];
+        gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, hdrFBO);
+
+        //COLOR BUFFER
+        gl.glGenTextures(2, colorBuffers, 0);
+        for (int i = 0; i < 2; i++) {
+            gl.glBindTexture(GL.GL_TEXTURE_2D, colorBuffers[i]);
+            gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA16F, 1920, 1080, 0, GL.GL_RGBA, GL.GL_FLOAT, null);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
+            gl.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0 + i, GL.GL_TEXTURE_2D, colorBuffers[i], 0);
+        }
+
+        //RENDER BUFFER
+        gl.glGenRenderbuffers(1, temp, 0);
+        rboDepth = temp[0];
+        gl.glBindRenderbuffer(GL.GL_RENDERBUFFER, rboDepth);
+        gl.glRenderbufferStorage(GL.GL_RENDERBUFFER, GL2ES2.GL_DEPTH_COMPONENT, 1920, 1080);
+        gl.glFramebufferRenderbuffer(GL.GL_FRAMEBUFFER, GL.GL_DEPTH_ATTACHMENT, GL. GL_RENDERBUFFER, rboDepth);
+
+        IntBuffer attachments = IntBuffer.wrap(new int[] {
+                GL4.GL_COLOR_ATTACHMENT0, GL4.GL_COLOR_ATTACHMENT1
+        });
+        gl.glDrawBuffers(2, attachments);
+
+        if (gl.glCheckFramebufferStatus(GL.GL_FRAMEBUFFER) != GL.GL_FRAMEBUFFER_COMPLETE) {
+            System.err.println("ERROR::FRAME BUFFER:: Frame buffer is not complete!");
+        }
+
+        gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0);
+
+        //BLUR FRAME BUFFERS
+        gl.glGenFramebuffers(2, pingpongFBO, 0);
+        gl.glGenTextures(2, pingpongColorBuffers, 0);
+
+        for (int i = 0; i < 2; i++) {
+            gl.glBindTexture(GL.GL_TEXTURE_2D, pingpongColorBuffers[i]);
+            gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA16F, 1920, 1080, 0, GL.GL_RGBA, GL.GL_FLOAT, null);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE);
+
+            gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, pingpongFBO[i]);
+            gl.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, pingpongColorBuffers[i], 0);
+
+            if (gl.glCheckFramebufferStatus(GL.GL_FRAMEBUFFER) != GL.GL_FRAMEBUFFER_COMPLETE) {
+                System.err.println("ERROR::BLUR FRAME BUFFER:: Blur Frame buffer is not complete!");
+            }
+        }
+
         gl.glEnable(GL.GL_DEPTH_TEST);
-        gl.glEnable(GL.GL_CULL_FACE);
-        gl.glFrontFace(gl.GL_CCW);
+        //gl.glEnable(GL.GL_CULL_FACE);
+        gl.glFrontFace(GL.GL_CCW);
         switchPolygonMode();
     }
 
-    @Override
-    public void display(GLAutoDrawable drawable) {
-        model.identity();
+    public void renderQuad(GLAutoDrawable drawable) {
+        gl.glViewport(0, 0, 1920, 1080);
 
-        newTime = System.currentTimeMillis();
-        deltaTime = (newTime - oldTime) / 1000.0f;
-        oldTime = newTime;
 
-        inputHandler.update(deltaTime);
+        gl.glDisable(GL.GL_DEPTH_TEST);
+        gl.glClear(GL.GL_DEPTH_BUFFER_BIT);
 
+        //SCREEN QUAD
+        if (quadVAO == 0) {
+            int[] vaoQuad = new int[1];
+            gl.glGenVertexArrays(1, vaoQuad, 0);
+            quadVAO = vaoQuad[0];
+
+            int[] vboQuad = new int[1];
+            gl.glGenBuffers(1, vboQuad, 0);
+            quadVBO = vboQuad[0];
+
+            gl.glBindVertexArray(quadVAO);
+
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, quadVBO);
+            gl.glBufferData(GL.GL_ARRAY_BUFFER, (long) quadVertices.length * Float.BYTES, FloatBuffer.wrap(quadVertices), GL.GL_STATIC_DRAW);
+
+            int strideQuad = 5 * Float.BYTES;
+
+            //Position
+            gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, strideQuad, 0);
+            gl.glEnableVertexAttribArray(0);
+
+            //Texture Coords
+            gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, strideQuad, 3 * Float.BYTES);
+            gl.glEnableVertexAttribArray(1);
+        }
+
+        gl.glBindVertexArray(quadVAO);
+        gl.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 4);
+        gl.glBindVertexArray(0);
+
+        gl.glEnable(GL.GL_DEPTH_TEST);
+    }
+
+    public void render(GLAutoDrawable drawable) {
         flashLight.position = new Vector3f(camera.position).sub(new Vector3f(camera.up).mul(0.3f));
         flashLight.direction = camera.front;
 
@@ -316,14 +444,6 @@ public class Main implements GLEventListener {
         blueLamp.position.x = 0.2f;
         blueLamp.position.z = 4.0f * (float)(0.8f * Math.cos(System.currentTimeMillis() * 0.001));
         blueLamp.position.y = 4.0f * (float)(0.8f * Math.sin(System.currentTimeMillis() * 0.001));
-
-        gl.glClearColor(backgroundColor.getRed() / 255f, backgroundColor.getGreen() / 255f, backgroundColor.getBlue() / 255f, backgroundColor.getAlpha() / 255f);
-        gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
-
-        if (switchMode) {
-            switchPolygonMode();
-            switchMode = false;
-        }
 
         Matrix4f p = camera.getProjectionMatrix();
         Matrix4f v = camera.getViewMatrix();
@@ -374,7 +494,7 @@ public class Main implements GLEventListener {
         model.scale(lightTrans.scale);
         lightShader.setMatrix4f("model", model);
         lightShader.setVec3("lightColor", new Vector3f(1.0f, 0.2f, 0.2f));
-        gl.glDrawArrays(gl.GL_TRIANGLES, 0, 36);
+        gl.glDrawArrays(GL.GL_TRIANGLES, 0, 36);
 
         // Blue Lamp
         lightTrans.position = blueLamp.position;
@@ -383,25 +503,127 @@ public class Main implements GLEventListener {
         model.scale(lightTrans.scale);
         lightShader.setMatrix4f("model", model);
         lightShader.setVec3("lightColor", new Vector3f(0.2f, 0.2f, 1.0f));
-        gl.glDrawArrays(gl.GL_TRIANGLES, 0, 36);
+        gl.glDrawArrays(GL.GL_TRIANGLES, 0, 36);
+
+        //DRAWING BACKPACK
+//        model.identity();
+//        model.translate(new Vector3f(0.0f, 0.0f, 0.0f));
+//        model.scale(new Vector3f(0.1f, 0.1f, 0.1f));
+//        backpackShader.use();
+//        backpackShader.setMatrix4f("pv", pv);
+//        backpackShader.setMatrix4f("model", model);
+//        backpackShader.setFloat("shininess", 64.0f);
+//        backpackShader.setVec3("viewPos", camera.position);
+//
+//        activeLights = 0;
+//        for (Light light : lights)
+//            activeLights += light.putInShader(backpackShader, activeLights);
+//
+//        backpackShader.setInt("lights_count", activeLights);
+
+        //backpack.draw(backpackShader);
 
         //DRAWING BACKPACK
         model.identity();
         model.translate(new Vector3f(0.0f, 0.0f, 0.0f));
         model.scale(new Vector3f(0.1f, 0.1f, 0.1f));
-        backpackShader.use();
-        backpackShader.setMatrix4f("pv", pv);
-        backpackShader.setMatrix4f("model", model);
-        backpackShader.setFloat("shininess", 64.0f);
-        backpackShader.setVec3("viewPos", camera.position);
+        journeyShader.use();
+        journeyShader.setMatrix4f("pv", pv);
+        journeyShader.setMatrix4f("model", model);
+        journeyShader.setFloat("shininess", 64.0f);
+        journeyShader.setVec3("viewPos", camera.position);
 
         activeLights = 0;
         for (Light light : lights)
-            activeLights += light.putInShader(backpackShader, activeLights);
+            activeLights += light.putInShader(journeyShader, activeLights);
 
-        backpackShader.setInt("lights_count", activeLights);
+        journeyShader.setInt("lights_count", activeLights);
 
-        backpack.draw(backpackShader);
+        character.draw(journeyShader);
+    }
+
+    @Override
+    public void display(GLAutoDrawable drawable) {
+        newTime = System.currentTimeMillis();
+        deltaTime = (newTime - oldTime) / 1000.0f;
+        oldTime = newTime;
+
+        inputHandler.update(deltaTime);
+
+        if (switchMode) {
+            switchPolygonMode();
+            switchMode = false;
+        }
+
+        if (wireframeMode) {
+            gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0);
+            gl.glClearColor(
+                    backgroundColor.getRed() / 255f,
+                    backgroundColor.getGreen() / 255f,
+                    backgroundColor.getBlue() / 255f,
+                    backgroundColor.getAlpha() / 255f
+            );
+            gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
+
+            render(drawable);
+        } else {
+            gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, hdrFBO);
+            gl.glClearColor(
+                    backgroundColor.getRed() / 255f,
+                    backgroundColor.getGreen() / 255f,
+                    backgroundColor.getBlue() / 255f,
+                    backgroundColor.getAlpha() / 255f
+            );
+            gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
+
+            render(drawable);
+
+            gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0);
+            gl.glClearColor(
+                    backgroundColor.getRed() / 255f,
+                    backgroundColor.getGreen() / 255f,
+                    backgroundColor.getBlue() / 255f,
+                    backgroundColor.getAlpha() / 255f
+            );
+            gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
+
+            quadShader.use();
+            quadShader.setInt("scene", 0);
+
+            gl.glActiveTexture(GL.GL_TEXTURE0);
+            gl.glBindTexture(GL.GL_TEXTURE_2D, colorBuffers[0]);
+
+            renderQuad(drawable);
+
+            boolean horizontal = true, firstIteration = true;
+            int amount = 10;
+            blurShader.use();
+            blurShader.setInt("image", 0);
+            for (int i = 0; i < amount; i++)
+            {
+                gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, pingpongFBO[horizontal ? 1 : 0]);
+                blurShader.setInt("horizontal", horizontal ? 1 : 0);
+                gl.glBindTexture(GL.GL_TEXTURE_2D, firstIteration ? colorBuffers[1] : pingpongColorBuffers[!horizontal ? 1 : 0]);
+                renderQuad(drawable);
+                horizontal = !horizontal;
+                if (firstIteration)
+                    firstIteration = false;
+            }
+            gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0);
+
+            bloomShader.use();
+            bloomShader.setInt("bloomBlur", 1);
+            bloomShader.setInt("bloom", 1);
+            bloomShader.setFloat("exposure", 0.1f);
+
+            gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
+            gl.glActiveTexture(GL.GL_TEXTURE0);
+            gl.glBindTexture(GL.GL_TEXTURE_2D, colorBuffers[0]);
+            gl.glActiveTexture(GL.GL_TEXTURE1);
+            gl.glBindTexture(GL.GL_TEXTURE_2D, pingpongColorBuffers[!horizontal ? 1 : 0]);
+
+            renderQuad(drawable);
+        }
     }
 
     @Override
