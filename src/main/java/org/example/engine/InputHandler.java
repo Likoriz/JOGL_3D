@@ -7,15 +7,16 @@ import java.util.Arrays;
 import org.example.Main;
 import org.example.data.CameraMovement;
 
+import javax.swing.*;
 
 public class InputHandler implements KeyListener, MouseListener, MouseMotionListener, MouseWheelListener {
 
-    private boolean[] keys = new boolean[256];
-    private float lastMouseX, lastMouseY;
-    private float offsetX = 0, offsetY = 0;
+    private final boolean[] keys = new boolean[256];
+    public float lastMouseX;
+    public float lastMouseY;
 
     private final Main mainInstance;
-    private Camera camera;
+    private final Camera camera;
 
     public InputHandler(Main mainInstance, Camera camera) {
         this.mainInstance = mainInstance;
@@ -51,6 +52,9 @@ public class InputHandler implements KeyListener, MouseListener, MouseMotionList
     public void mousePressed(MouseEvent e) {
         lastMouseX = e.getX();
         lastMouseY = e.getY();
+
+        if (SwingUtilities.isLeftMouseButton(e))
+            Main.triggerPulse((int) lastMouseX, (int) lastMouseY);
     }
 
     @Override
@@ -61,13 +65,15 @@ public class InputHandler implements KeyListener, MouseListener, MouseMotionList
         float mouseX = e.getX();
         float mouseY = e.getY();
 
-        offsetX = mouseX - lastMouseX;
-        offsetY = lastMouseY - mouseY;
+        if (SwingUtilities.isRightMouseButton(e)) {
+            float offsetX = mouseX - lastMouseX;
+            float offsetY = lastMouseY - mouseY;
 
-        lastMouseX = mouseX;
-        lastMouseY = mouseY;
+            lastMouseX = mouseX;
+            lastMouseY = mouseY;
 
-        camera.rotate(offsetX, offsetY);
+            camera.rotate(offsetX, offsetY);
+        }
     }
 
     @Override
@@ -79,7 +85,7 @@ public class InputHandler implements KeyListener, MouseListener, MouseMotionList
 
         switch(e.getKeyCode()) {
             case KeyEvent.VK_SPACE:
-                mainInstance.wireframeMode = !(mainInstance.wireframeMode);
+                Main.wireframeMode = !(Main.wireframeMode);
                 mainInstance.switchMode = true;
                 break;
             case KeyEvent.VK_NUMPAD0:

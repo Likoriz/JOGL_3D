@@ -109,5 +109,5 @@ void main()
             }
         }
         OutColor += vec4(lresult, 1.0f);
-    }// end of for
+    }
 }

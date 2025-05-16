@@ -13,7 +13,8 @@ void main()
     vec2 tex_offset;
     tex_offset = 1.0 / textureSize(image, 0);
     vec3 result = texture(image, TexCoords).rgb * weight[0];
-    if(horizontal)
+
+    if (horizontal)
     {
         for(int i = 1; i < 5; ++i)
         {

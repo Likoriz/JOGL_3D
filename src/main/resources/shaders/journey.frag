@@ -1,4 +1,4 @@
-#version 430 core
+#version 330 core
 
 struct Light {
     int type;
@@ -107,15 +107,16 @@ void main()
     vec3 viewDir = normalize(viewPos - FragPos);
     float facing = 1.0 - max(dot(norm, viewDir), 0.0);
     float intensity = length(emissiveColor);
-    vec3 glow = emissiveColor * facing * intensity * 40.0;
+    vec3 glow = emissiveColor * facing * intensity * 4.0;
 
     vec3 result = lresult + emissiveColor + glow;
 
     FragColor = vec4(result, 1.0);
 
     float brightness = dot(result, vec3(0.2126, 0.7152, 0.0722));
+
     if (brightness > 1.0)
-    BrightColor = vec4(result, 1.0);
+        BrightColor = vec4(result, 1.0);
     else
-    BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
+        BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
 }

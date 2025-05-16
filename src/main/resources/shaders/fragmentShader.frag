@@ -116,6 +116,6 @@ void main()
                 }
             }
             outColor += texture(ourTexture, texCoords) * vec4(lresult, 1.0f);
-        }// end of for
+        }
     }
 }

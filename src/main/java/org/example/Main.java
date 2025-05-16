@@ -4,11 +4,10 @@ import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.FPSAnimator;
 //import com.jogamp.opengl.util.texture.Texture;
-import org.example.data.Material;
 import org.example.data.ModelTransform;
 import org.example.engine.*;
 import org.joml.Matrix4f;
-import org.joml.Random;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
 
 import javax.swing.*;
@@ -20,6 +19,9 @@ import java.util.Vector;
 public class Main implements GLEventListener {
     public static GL4 gl;
 
+    static int windowWidth = 1920;
+    static int windowHeight = 1080;
+
     private Shader shader;
     private Shader lightShader;
     //private Shader backpackShader;
@@ -27,6 +29,7 @@ public class Main implements GLEventListener {
     private Shader quadShader;
     private Shader bloomShader;
     private Shader blurShader;
+    private static Shader pulseShader;
 
     private static InputHandler inputHandler;
 
@@ -46,6 +49,32 @@ public class Main implements GLEventListener {
             gl.glPolygonMode(GL.GL_FRONT_AND_BACK, GL2GL3.GL_LINE);
         else
             gl.glPolygonMode(GL.GL_FRONT_AND_BACK, GL2GL3.GL_FILL);
+    }
+
+    static Vector2f waveOrigin = new Vector2f();
+    static float waveRadius = 0.0f;
+    static boolean spreadingColor = true;
+    static boolean waveActive = false;
+
+    public static void normalizeOrigin(int mouseX, int mouseY) {
+        float normalizedX = (float)mouseX / (float)windowWidth;
+        float normalizedY = 1.0f - ((float)mouseY / (float)windowHeight);
+
+        waveOrigin.set(normalizedX, normalizedY);
+    }
+
+    public static void triggerPulse(int mouseX, int mouseY) {
+        waveRadius = 0.0f;
+        spreadingColor = !spreadingColor;
+        waveActive = true;
+
+        normalizeOrigin(mouseX, mouseY);
+
+        pulseShader.use();
+        pulseShader.setVec2("waveOrigin", waveOrigin);
+        pulseShader.setFloat("waveRadius", waveRadius);
+        pulseShader.setBool("spreadingColor", spreadingColor);
+        pulseShader.setFloat("edgeSoftness", 0.5f);
     }
 
     private final float[] cube = {
@@ -93,10 +122,10 @@ public class Main implements GLEventListener {
             -1.0f, 1.0f, 1.0f,	0.0f,  1.0f,  0.0f,		0.0f, 0.0f,		0.0f, 1.0f, 0.0f
     };
 
-    private final int cubeCount = 200;
-    ModelTransform[] cubeTrans;
-    Material[] cubeMaterial;
-    int[] cubeMat;
+    //private final int cubeCount = 200;
+    //ModelTransform[] cubeTrans;
+    //Material[] cubeMaterial;
+    //int[] cubeMat;
 
     private int vbo_polygon;
     private int vao_polygon;
@@ -122,15 +151,21 @@ public class Main implements GLEventListener {
     private int quadVAO = 0;
     private int quadVBO;
     private final float[] quadVertices = {
-            // positions        // texCoords
-            -1.0f,  1.0f, 0.0f,  0.0f, 1.0f, // top-left
-            -1.0f, -1.0f, 0.0f,  0.0f, 0.0f, // bottom-left
-            1.0f,  1.0f, 0.0f,  1.0f, 1.0f, // top-right
-            1.0f, -1.0f, 0.0f,  1.0f, 0.0f  // bottom-right
+            // positions         // texCoords
+            -1.0f,  1.0f, 0.0f,   0.0f, 1.0f, // top-left
+            -1.0f, -1.0f, 0.0f,   0.0f, 0.0f, // bottom-left
+            1.0f, -1.0f, 0.0f,   1.0f, 0.0f, // bottom-right
+
+            -1.0f,  1.0f, 0.0f,   0.0f, 1.0f, // top-left
+            1.0f, -1.0f, 0.0f,   1.0f, 0.0f, // bottom-right
+            1.0f,  1.0f, 0.0f,   1.0f, 1.0f  // top-right
     };
 
     private final int[] pingpongFBO = new int[2];
     private final int[] pingpongColorBuffers = new int[2];
+
+    private int pulseFBO;
+    private int pulseColorBuffer;
 
     public static void main(String[] args) throws AWTException {
         JFrame frame = new JFrame("JOGL 3D Window");
@@ -206,6 +241,11 @@ public class Main implements GLEventListener {
 
         bloomShader = new Shader(gl, bloomVertexShaderPath, bloomFragmentShaderPath);
 
+        String pulseVertexShaderPath = "shaders/quad.vert";
+        String pulseFragmentShaderPath = "shaders/pulse.frag";
+
+        pulseShader = new Shader(gl, pulseVertexShaderPath, pulseFragmentShaderPath);
+
 //        try {
 //            InputStream textureStream = getClass().getClassLoader().getResourceAsStream("images/old_01.png");
 //            if (textureStream == null) {
@@ -232,44 +272,44 @@ public class Main implements GLEventListener {
 //            e.printStackTrace();
 //        }
 
-        cubeMaterial = new Material[3];
-        for (int i = 0; i < 3; i++)
-            cubeMaterial[i] = new Material();
-        //Pearl
-        cubeMaterial[0].ambient = new Vector3f(0.25f, 0.20725f, 0.20725f);
-        cubeMaterial[0].diffuse = new Vector3f(1f, 0.829f, 0.829f);
-        cubeMaterial[0].specular = new Vector3f(0.296648f, 0.296648f, 0.296648f);
-        cubeMaterial[0].shininess = 12.f;
-        //Chrome
-        cubeMaterial[1].ambient = new Vector3f(0.25f, 0.25f, 0.25f);
-        cubeMaterial[1].diffuse = new Vector3f(0.4f, 0.4f, 0.4f);
-        cubeMaterial[1].specular = new Vector3f(0.774597f, 0.774597f, 0.774597f);
-        cubeMaterial[1].shininess = 77.f;
-        //Ruby
-        cubeMaterial[2].ambient = new Vector3f(0.1745f, 0.01175f, 0.01175f);
-        cubeMaterial[2].diffuse = new Vector3f(0.61424f, 0.04136f, 0.04136f);
-        cubeMaterial[2].specular = new Vector3f(0.727811f, 0.626959f, 0.626959f);
-        cubeMaterial[2].shininess = 77.f;
-
-        cubeMat = new int[cubeCount];
-
-        cubeTrans = new ModelTransform[cubeCount];
-        Random rand = new Random();
-        for (int i = 0; i < cubeCount; i++) {
-            float scale = (rand.nextInt(6) + 1) / 20.0f;
-
-            cubeTrans[i] = new ModelTransform();
-
-            cubeTrans[i].position = new Vector3f((rand.nextInt(201) - 100) / 50.0f,(rand.nextInt(201) - 100) / 50.0f,(rand.nextInt(201) - 100) / 50.0f);
-            cubeTrans[i].rotation = new Vector3f(rand.nextFloat() * 360.0f, rand.nextFloat() * 360.0f, rand.nextFloat() * 360.0f);
-            cubeTrans[i].setScale(scale);
-
-            cubeMat[i] = rand.nextInt(3);
-
-            if (cubeTrans[i].position.length() < 0.7f) {
-                i--;
-            }
-        }
+//        cubeMaterial = new Material[3];
+//        for (int i = 0; i < 3; i++)
+//            cubeMaterial[i] = new Material();
+//        //Pearl
+//        cubeMaterial[0].ambient = new Vector3f(0.25f, 0.20725f, 0.20725f);
+//        cubeMaterial[0].diffuse = new Vector3f(1f, 0.829f, 0.829f);
+//        cubeMaterial[0].specular = new Vector3f(0.296648f, 0.296648f, 0.296648f);
+//        cubeMaterial[0].shininess = 12.f;
+//        //Chrome
+//        cubeMaterial[1].ambient = new Vector3f(0.25f, 0.25f, 0.25f);
+//        cubeMaterial[1].diffuse = new Vector3f(0.4f, 0.4f, 0.4f);
+//        cubeMaterial[1].specular = new Vector3f(0.774597f, 0.774597f, 0.774597f);
+//        cubeMaterial[1].shininess = 77.f;
+//        //Ruby
+//        cubeMaterial[2].ambient = new Vector3f(0.1745f, 0.01175f, 0.01175f);
+//        cubeMaterial[2].diffuse = new Vector3f(0.61424f, 0.04136f, 0.04136f);
+//        cubeMaterial[2].specular = new Vector3f(0.727811f, 0.626959f, 0.626959f);
+//        cubeMaterial[2].shininess = 77.f;
+//
+//        cubeMat = new int[cubeCount];
+//
+//        cubeTrans = new ModelTransform[cubeCount];
+//        Random rand = new Random();
+//        for (int i = 0; i < cubeCount; i++) {
+//            float scale = (rand.nextInt(6) + 1) / 20.0f;
+//
+//            cubeTrans[i] = new ModelTransform();
+//
+//            cubeTrans[i].position = new Vector3f((rand.nextInt(201) - 100) / 50.0f,(rand.nextInt(201) - 100) / 50.0f,(rand.nextInt(201) - 100) / 50.0f);
+//            cubeTrans[i].rotation = new Vector3f(rand.nextFloat() * 360.0f, rand.nextFloat() * 360.0f, rand.nextFloat() * 360.0f);
+//            cubeTrans[i].setScale(scale);
+//
+//            cubeMat[i] = rand.nextInt(3);
+//
+//            if (cubeTrans[i].position.length() < 0.7f) {
+//                i--;
+//            }
+//        }
 
         int[] vao = new int[1];
         gl.glGenVertexArrays(1, vao, 0);
@@ -373,7 +413,7 @@ public class Main implements GLEventListener {
 
         for (int i = 0; i < 2; i++) {
             gl.glBindTexture(GL.GL_TEXTURE_2D, pingpongColorBuffers[i]);
-            gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA16F, 1920, 1080, 0, GL.GL_RGBA, GL.GL_FLOAT, null);
+            gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA16F, windowWidth, windowHeight, 0, GL.GL_RGBA, GL.GL_FLOAT, null);
             gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
             gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
             gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE);
@@ -387,15 +427,36 @@ public class Main implements GLEventListener {
             }
         }
 
+        //PULSE FRAME BUFFER
+        int[] fbo = new int[1];
+        gl.glGenFramebuffers(1, fbo, 0);
+        pulseFBO = fbo[0];
+        gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, pulseFBO);
+
+        int[] tex = new int[1];
+        gl.glGenTextures(1, tex, 0);
+        pulseColorBuffer = tex[0];
+        gl.glBindTexture(GL.GL_TEXTURE_2D, pulseColorBuffer);
+
+        gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA16F, windowWidth, windowHeight, 0, GL.GL_RGBA, GL.GL_FLOAT, null);
+
+        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
+        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
+
+        gl.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, pulseColorBuffer, 0);
+
+        if (gl.glCheckFramebufferStatus(GL.GL_FRAMEBUFFER) != GL.GL_FRAMEBUFFER_COMPLETE) {
+            System.out.println("ERROR::PULSE FRAME BUFFER:: Pulse Frame buffer is not complete!");
+        }
+
         gl.glEnable(GL.GL_DEPTH_TEST);
         //gl.glEnable(GL.GL_CULL_FACE);
         gl.glFrontFace(GL.GL_CCW);
         switchPolygonMode();
     }
 
-    public void renderQuad(GLAutoDrawable drawable) {
+    public void renderQuad() {
         gl.glViewport(0, 0, 1920, 1080);
-
 
         gl.glDisable(GL.GL_DEPTH_TEST);
         gl.glClear(GL.GL_DEPTH_BUFFER_BIT);
@@ -427,24 +488,14 @@ public class Main implements GLEventListener {
         }
 
         gl.glBindVertexArray(quadVAO);
-        gl.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 4);
+        gl.glDrawArrays(GL.GL_TRIANGLES, 0, 6);
+
         gl.glBindVertexArray(0);
 
         gl.glEnable(GL.GL_DEPTH_TEST);
     }
 
-    public void render(GLAutoDrawable drawable) {
-        flashLight.position = new Vector3f(camera.position).sub(new Vector3f(camera.up).mul(0.3f));
-        flashLight.direction = camera.front;
-
-        redLamp.position.x = 4.0f * (float)(0.8f * Math.sin(System.currentTimeMillis() * 0.001));;
-        redLamp.position.z = 0.2f;
-        redLamp.position.y = 4.0f * (float)(0.8f * Math.cos(System.currentTimeMillis() * 0.001));;
-
-        blueLamp.position.x = 0.2f;
-        blueLamp.position.z = 4.0f * (float)(0.8f * Math.cos(System.currentTimeMillis() * 0.001));
-        blueLamp.position.y = 4.0f * (float)(0.8f * Math.sin(System.currentTimeMillis() * 0.001));
-
+    public void renderModel() {
         Matrix4f p = camera.getProjectionMatrix();
         Matrix4f v = camera.getViewMatrix();
         Matrix4f pv = p.mul(v);
@@ -483,27 +534,7 @@ public class Main implements GLEventListener {
 //        }
 
         //DRAWING LAMPS
-        lightShader.use();
-        lightShader.setMatrix4f("pv", pv);
-        gl.glBindVertexArray(vao_polygon);
 
-        //Red lamp
-        lightTrans.position = redLamp.position;
-        model.identity();
-        model.translate(lightTrans.position);
-        model.scale(lightTrans.scale);
-        lightShader.setMatrix4f("model", model);
-        lightShader.setVec3("lightColor", new Vector3f(1.0f, 0.2f, 0.2f));
-        gl.glDrawArrays(GL.GL_TRIANGLES, 0, 36);
-
-        // Blue Lamp
-        lightTrans.position = blueLamp.position;
-        model.identity();
-        model.translate(lightTrans.position);
-        model.scale(lightTrans.scale);
-        lightShader.setMatrix4f("model", model);
-        lightShader.setVec3("lightColor", new Vector3f(0.2f, 0.2f, 1.0f));
-        gl.glDrawArrays(GL.GL_TRIANGLES, 0, 36);
 
         //DRAWING BACKPACK
 //        model.identity();
@@ -524,6 +555,8 @@ public class Main implements GLEventListener {
         //backpack.draw(backpackShader);
 
         //DRAWING BACKPACK
+        renderLights(pv);
+
         model.identity();
         model.translate(new Vector3f(0.0f, 0.0f, 0.0f));
         model.scale(new Vector3f(0.1f, 0.1f, 0.1f));
@@ -540,6 +573,41 @@ public class Main implements GLEventListener {
         journeyShader.setInt("lights_count", activeLights);
 
         character.draw(journeyShader);
+    }
+
+    public void renderLights(Matrix4f pv) {
+        flashLight.position = new Vector3f(camera.position).sub(new Vector3f(camera.up).mul(0.3f));
+        flashLight.direction = camera.front;
+
+        redLamp.position.x = 4.0f * (float)(0.8f * Math.sin(System.currentTimeMillis() * 0.001));;
+        redLamp.position.z = 0.2f;
+        redLamp.position.y = 4.0f * (float)(0.8f * Math.cos(System.currentTimeMillis() * 0.001));;
+
+        blueLamp.position.x = 0.2f;
+        blueLamp.position.z = 4.0f * (float)(0.8f * Math.cos(System.currentTimeMillis() * 0.001));
+        blueLamp.position.y = 4.0f * (float)(0.8f * Math.sin(System.currentTimeMillis() * 0.001));
+
+        lightShader.use();
+        lightShader.setMatrix4f("pv", pv);
+        gl.glBindVertexArray(vao_polygon);
+
+        //Red lamp
+        lightTrans.position = redLamp.position;
+        model.identity();
+        model.translate(lightTrans.position);
+        model.scale(lightTrans.scale);
+        lightShader.setMatrix4f("model", model);
+        lightShader.setVec3("lightColor", new Vector3f(10.0f, 0.0f, 0.0f));
+        gl.glDrawArrays(GL.GL_TRIANGLES, 0, 36);
+
+        // Blue Lamp
+        lightTrans.position = blueLamp.position;
+        model.identity();
+        model.translate(lightTrans.position);
+        model.scale(lightTrans.scale);
+        lightShader.setMatrix4f("model", model);
+        lightShader.setVec3("lightColor", new Vector3f(0.0f, 0.0f, 15.0f));
+        gl.glDrawArrays(GL.GL_TRIANGLES, 0, 36);
     }
 
     @Override
@@ -565,7 +633,7 @@ public class Main implements GLEventListener {
             );
             gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
-            render(drawable);
+            renderModel();
         } else {
             gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, hdrFBO);
             gl.glClearColor(
@@ -576,7 +644,7 @@ public class Main implements GLEventListener {
             );
             gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
-            render(drawable);
+            renderModel();
 
             gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0);
             gl.glClearColor(
@@ -593,7 +661,7 @@ public class Main implements GLEventListener {
             gl.glActiveTexture(GL.GL_TEXTURE0);
             gl.glBindTexture(GL.GL_TEXTURE_2D, colorBuffers[0]);
 
-            renderQuad(drawable);
+            renderQuad();
 
             boolean horizontal = true, firstIteration = true;
             int amount = 10;
@@ -604,25 +672,60 @@ public class Main implements GLEventListener {
                 gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, pingpongFBO[horizontal ? 1 : 0]);
                 blurShader.setInt("horizontal", horizontal ? 1 : 0);
                 gl.glBindTexture(GL.GL_TEXTURE_2D, firstIteration ? colorBuffers[1] : pingpongColorBuffers[!horizontal ? 1 : 0]);
-                renderQuad(drawable);
+                renderQuad();
                 horizontal = !horizontal;
                 if (firstIteration)
                     firstIteration = false;
             }
-            gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0);
+            gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, pulseFBO);
 
             bloomShader.use();
             bloomShader.setInt("bloomBlur", 1);
             bloomShader.setInt("bloom", 1);
-            bloomShader.setFloat("exposure", 0.1f);
-
-            gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
+            bloomShader.setFloat("bloomStrength", 0.5f);
+            bloomShader.setFloat("exposure", 1.0f);
+            
             gl.glActiveTexture(GL.GL_TEXTURE0);
             gl.glBindTexture(GL.GL_TEXTURE_2D, colorBuffers[0]);
             gl.glActiveTexture(GL.GL_TEXTURE1);
             gl.glBindTexture(GL.GL_TEXTURE_2D, pingpongColorBuffers[!horizontal ? 1 : 0]);
 
-            renderQuad(drawable);
+            renderQuad();
+
+            if (waveActive) {
+                gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0);
+                gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
+
+                waveRadius += deltaTime * 0.5f;
+
+                if (waveRadius > 1.5f) {
+                    waveActive = false;
+                }
+
+                normalizeOrigin((int) inputHandler.lastMouseX, (int) inputHandler.lastMouseY);
+
+                pulseShader.use();
+                pulseShader.setVec2("waveOrigin", waveOrigin);
+                pulseShader.setFloat("waveRadius", waveRadius);
+                pulseShader.setInt("scene", 0);
+
+                gl.glActiveTexture(GL.GL_TEXTURE0);
+                gl.glBindTexture(GL.GL_TEXTURE_2D, pulseColorBuffer);
+
+                renderQuad();
+            }
+            else {
+                gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0);
+                gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
+
+                quadShader.use();
+                quadShader.setInt("scene", 0);
+                gl.glActiveTexture(GL.GL_TEXTURE0);
+                gl.glBindTexture(GL.GL_TEXTURE_2D, pulseColorBuffer);
+
+                renderQuad();
+
+            }
         }
     }
 
@@ -633,6 +736,9 @@ public class Main implements GLEventListener {
 
     @Override
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
-        gl.glViewport(0, 0, width, height);
+        gl.glViewport(x, y, width, height);
+
+        windowWidth = width;
+        windowHeight = height;
     }
 }
