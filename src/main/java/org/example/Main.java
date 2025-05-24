@@ -35,7 +35,8 @@ public class Main implements GLEventListener {
 
     public Color backgroundColor = Color.BLACK;
 
-    private static final Camera camera = new Camera(new Vector3f(0.0f, 0.0f, -2.0f));
+    //private static final Camera camera = new Camera(new Vector3f(0.0f, 0.0f, -2.0f));
+    private static final Camera camera = new Camera(new Vector3f(0.0f, 10.0f, -25.0f));
 
     private long oldTime = System.currentTimeMillis();
     private long newTime;
@@ -52,9 +53,10 @@ public class Main implements GLEventListener {
     }
 
     static Vector2f waveOrigin = new Vector2f();
-    static float waveRadius = 0.0f;
-    static boolean spreadingColor = true;
+    static float waveRadius = -1.0f;
+    static boolean spreadingColor = false;
     static boolean waveActive = false;
+    static boolean waveStarted = false;
 
     public static void normalizeOrigin(int mouseX, int mouseY) {
         float normalizedX = (float)mouseX / (float)windowWidth;
@@ -64,17 +66,12 @@ public class Main implements GLEventListener {
     }
 
     public static void triggerPulse(int mouseX, int mouseY) {
+        waveStarted = true;
         waveRadius = 0.0f;
         spreadingColor = !spreadingColor;
         waveActive = true;
 
         normalizeOrigin(mouseX, mouseY);
-
-        pulseShader.use();
-        pulseShader.setVec2("waveOrigin", waveOrigin);
-        pulseShader.setFloat("waveRadius", waveRadius);
-        pulseShader.setBool("spreadingColor", spreadingColor);
-        pulseShader.setFloat("edgeSoftness", 0.5f);
     }
 
     private final float[] cube = {
@@ -345,7 +342,7 @@ public class Main implements GLEventListener {
         //backpack = new Model("models/backpack/backpack.obj", false);
         character = new Model("models/journey/Jorney_clothes_v3.obj", true);
 
-        //LIGHTS INITIALIZATION
+        //LIGHTS
         lightTrans = new ModelTransform();
         float scale = 0.1f;
 
@@ -553,8 +550,7 @@ public class Main implements GLEventListener {
 //        backpackShader.setInt("lights_count", activeLights);
 
         //backpack.draw(backpackShader);
-
-        //DRAWING BACKPACK
+        
         renderLights(pv);
 
         model.identity();
@@ -623,18 +619,8 @@ public class Main implements GLEventListener {
             switchMode = false;
         }
 
-        if (wireframeMode) {
-            gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0);
-            gl.glClearColor(
-                    backgroundColor.getRed() / 255f,
-                    backgroundColor.getGreen() / 255f,
-                    backgroundColor.getBlue() / 255f,
-                    backgroundColor.getAlpha() / 255f
-            );
-            gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
-
-            renderModel();
-        } else {
+        if (!wireframeMode) {
+            //ORIGINAL
             gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, hdrFBO);
             gl.glClearColor(
                     backgroundColor.getRed() / 255f,
@@ -646,6 +632,40 @@ public class Main implements GLEventListener {
 
             renderModel();
 
+            //BLUR
+            boolean horizontal = true, firstIteration = true;
+            int amount = 10;
+
+            blurShader.use();
+            blurShader.setInt("image", 0);
+
+            for (int i = 0; i < amount; i++) {
+                gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, pingpongFBO[horizontal ? 1 : 0]);
+                blurShader.setInt("horizontal", horizontal ? 1 : 0);
+                gl.glBindTexture(GL.GL_TEXTURE_2D, firstIteration ? colorBuffers[1] : pingpongColorBuffers[!horizontal ? 1 : 0]);
+                renderQuad();
+                horizontal = !horizontal;
+                if (firstIteration)
+                    firstIteration = false;
+            }
+
+            //BLOOM
+            gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, pulseFBO);
+            bloomShader.use();
+            bloomShader.setInt("scene", 0);
+            bloomShader.setInt("bloomBlur", 1);
+            bloomShader.setInt("bloom", 1);
+            bloomShader.setFloat("bloomStrength", 0.5f);
+            bloomShader.setFloat("exposure", 1.0f);
+
+            gl.glActiveTexture(GL.GL_TEXTURE0);
+            gl.glBindTexture(GL.GL_TEXTURE_2D, colorBuffers[0]);
+            gl.glActiveTexture(GL.GL_TEXTURE1);
+            gl.glBindTexture(GL.GL_TEXTURE_2D, pingpongColorBuffers[!horizontal ? 1 : 0]);
+
+            renderQuad();
+
+            //MONOCHROME
             gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0);
             gl.glClearColor(
                     backgroundColor.getRed() / 255f,
@@ -655,77 +675,37 @@ public class Main implements GLEventListener {
             );
             gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
-            quadShader.use();
-            quadShader.setInt("scene", 0);
-
-            gl.glActiveTexture(GL.GL_TEXTURE0);
-            gl.glBindTexture(GL.GL_TEXTURE_2D, colorBuffers[0]);
-
-            renderQuad();
-
-            boolean horizontal = true, firstIteration = true;
-            int amount = 10;
-            blurShader.use();
-            blurShader.setInt("image", 0);
-            for (int i = 0; i < amount; i++)
-            {
-                gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, pingpongFBO[horizontal ? 1 : 0]);
-                blurShader.setInt("horizontal", horizontal ? 1 : 0);
-                gl.glBindTexture(GL.GL_TEXTURE_2D, firstIteration ? colorBuffers[1] : pingpongColorBuffers[!horizontal ? 1 : 0]);
-                renderQuad();
-                horizontal = !horizontal;
-                if (firstIteration)
-                    firstIteration = false;
-            }
-            gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, pulseFBO);
-
-            bloomShader.use();
-            bloomShader.setInt("bloomBlur", 1);
-            bloomShader.setInt("bloom", 1);
-            bloomShader.setFloat("bloomStrength", 0.5f);
-            bloomShader.setFloat("exposure", 1.0f);
-            
-            gl.glActiveTexture(GL.GL_TEXTURE0);
-            gl.glBindTexture(GL.GL_TEXTURE_2D, colorBuffers[0]);
-            gl.glActiveTexture(GL.GL_TEXTURE1);
-            gl.glBindTexture(GL.GL_TEXTURE_2D, pingpongColorBuffers[!horizontal ? 1 : 0]);
-
-            renderQuad();
+            pulseShader.use();
 
             if (waveActive) {
-                gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0);
-                gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
-
                 waveRadius += deltaTime * 0.5f;
-
                 if (waveRadius > 1.5f) {
                     waveActive = false;
                 }
-
-                normalizeOrigin((int) inputHandler.lastMouseX, (int) inputHandler.lastMouseY);
-
-                pulseShader.use();
-                pulseShader.setVec2("waveOrigin", waveOrigin);
-                pulseShader.setFloat("waveRadius", waveRadius);
-                pulseShader.setInt("scene", 0);
-
-                gl.glActiveTexture(GL.GL_TEXTURE0);
-                gl.glBindTexture(GL.GL_TEXTURE_2D, pulseColorBuffer);
-
-                renderQuad();
             }
-            else {
-                gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0);
-                gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
-                quadShader.use();
-                quadShader.setInt("scene", 0);
-                gl.glActiveTexture(GL.GL_TEXTURE0);
-                gl.glBindTexture(GL.GL_TEXTURE_2D, pulseColorBuffer);
+            normalizeOrigin((int) inputHandler.lastMouseX, (int) inputHandler.lastMouseY);
+            pulseShader.setVec2("waveOrigin", waveOrigin);
+            pulseShader.setFloat("waveRadius", waveRadius);
+            pulseShader.setBool("spreadingColor", spreadingColor);
+            pulseShader.setFloat("edgeSoftness", 0.05f);
+            pulseShader.setInt("scene", 0);
 
-                renderQuad();
+            gl.glActiveTexture(GL.GL_TEXTURE0);
+            gl.glBindTexture(GL.GL_TEXTURE_2D, pulseColorBuffer);
+            renderQuad();
+        }
+        else {
+            gl.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0);
+            gl.glClearColor(
+                    backgroundColor.getRed() / 255f,
+                    backgroundColor.getGreen() / 255f,
+                    backgroundColor.getBlue() / 255f,
+                    backgroundColor.getAlpha() / 255f
+            );
+            gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
-            }
+            renderModel();
         }
     }
 
